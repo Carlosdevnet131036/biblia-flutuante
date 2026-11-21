@@ -1,7 +1,7 @@
 // Mantém o app e as traduções baixadas disponíveis offline.
-const CACHE = 'biblia-v1';
+const CACHE = 'biblia-v2';
 const SHELL = ['./', 'index.html', 'web-api.js', 'search.js', 'note-topics.js', 'manifest.webmanifest',
-  'assets/biblia.svg', 'assets/biblia.png', 'data/referencias.json'];
+  'assets/biblia.svg', 'assets/apple-touch-icon.png', 'assets/icon-192.png', 'assets/icon-512.png', 'data/referencias.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
