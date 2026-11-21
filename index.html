@@ -1,0 +1,1429 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Bíblia</title>
+<link rel="icon" href="assets/biblia.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bíblia">
+<meta name="theme-color" content="#211a14">
+<link rel="apple-touch-icon" href="assets/biblia.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://raw.githubusercontent.com; img-src 'self' data: blob:">
+<script src="web-api.js"></script>
+<style>
+  html.web, html.web body { background: #211a14; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+  html.web { overscroll-behavior: none; }
+</style>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 800px; height: 540px; background: transparent; overflow: hidden;
+    font-family: "Segoe UI", system-ui, sans-serif; user-select: none; }
+  body { display: flex; align-items: flex-start; }
+
+  /* ---------- Temas do papel ---------- */
+  .book[data-theme="light"] { --paper:#fbf6ea; --paper2:#f3ecdb; --ink:#2b2219; --muted:#9a8a70; --rule:#e4d9c2; --accent:#8b2e1f; --hl:#fbe7a1; --edge:#e8dfca; --edge2:#d9cdb2; }
+  .book[data-theme="sepia"] { --paper:#f1e2c3; --paper2:#e7d5b0; --ink:#3d2e1c; --muted:#957c55; --rule:#dcc79f; --accent:#8b3a14; --hl:#ecc979; --edge:#e0cfa9; --edge2:#cdb88d; }
+  .book[data-theme="dark"]  { --paper:#24201b; --paper2:#1c1915; --ink:#ddd2bd; --muted:#8a7d68; --rule:#3a342b; --accent:#d8a85c; --hl:#5b4a1f; --edge:#3a342c; --edge2:#2e2923; }
+
+  /* ---------- Livro ---------- */
+  .book { width: 740px; height: 540px; position: relative; }
+  .cover { position: absolute; inset: 0; border-radius: 10px; padding: 16px 18px 18px;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.08), transparent 60%),
+      repeating-linear-gradient(45deg, rgba(0,0,0,.035) 0 2px, transparent 2px 5px),
+      linear-gradient(135deg, #5a3320, #3b1f12 70%, #2d170c);
+    box-shadow: inset 0 0 0 2px rgba(201,162,74,.35), inset 0 0 0 6px rgba(0,0,0,.25), 0 6px 18px rgba(0,0,0,.35);
+    -webkit-app-region: drag; }
+  .cover::before { content: ""; position: absolute; left: 50%; top: 4px; bottom: 4px; width: 26px; margin-left: -13px;
+    background: linear-gradient(90deg, rgba(0,0,0,.35), rgba(255,255,255,.06) 50%, rgba(0,0,0,.35)); border-radius: 3px; }
+
+  .spread { position: relative; width: 100%; height: 100%; display: flex; perspective: 2200px; -webkit-app-region: no-drag; }
+  .page { width: 50%; height: 100%; position: relative; display: flex; flex-direction: column; color: var(--ink);
+    background: var(--paper); transition: background .3s, color .3s; overflow: hidden; }
+  .page.left { padding: 20px 24px 12px 30px; border-radius: 4px 0 0 4px;
+    background: linear-gradient(to left, rgba(0,0,0,.20), rgba(0,0,0,.06) 5%, transparent 12%), linear-gradient(var(--paper), var(--paper2));
+    box-shadow: -1px 1px 0 var(--edge), -2px 2px 0 var(--edge2), -3px 3px 0 var(--edge), -4px 4px 0 var(--edge2); }
+  .page.right { padding: 20px 30px 12px 24px; border-radius: 0 4px 4px 0;
+    background: linear-gradient(to right, rgba(0,0,0,.20), rgba(0,0,0,.06) 5%, transparent 12%), linear-gradient(var(--paper), var(--paper2));
+    box-shadow: 1px 1px 0 var(--edge), 2px 2px 0 var(--edge2), 3px 3px 0 var(--edge), 4px 4px 0 var(--edge2); }
+
+  .phead { flex: none; height: 22px; display: flex; justify-content: space-between; align-items: center;
+    font: 600 10px "Segoe UI", sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--rule); margin-bottom: 10px; }
+  .phead button { background: none; border: 0; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; }
+  .phead button:hover { color: var(--accent); }
+  .phead .ver { border: 1px solid var(--rule); border-radius: 999px; padding: 1px 8px; }
+
+  .pbody { flex: 1; overflow: hidden; font-family: Georgia, "Times New Roman", serif; font-size: var(--fs, 16px);
+    line-height: 1.6; text-align: justify; hyphens: auto; user-select: text; }
+  .pfoot { flex: none; height: 24px; display: flex; align-items: center; justify-content: center; position: relative;
+    font: italic 12px Georgia, serif; color: var(--muted); }
+  .turn { position: absolute; bottom: -12px; width: 46px; height: 46px; border: 0; cursor: pointer; background: none; }
+  .left .turn { left: -30px; } .right .turn { right: -30px; }
+  .turn::after { content: ""; position: absolute; bottom: 12px; width: 0; height: 0; transition: .2s; }
+  .right .turn::after { right: 0; border-left: 0 solid transparent; border-bottom: 0 solid var(--paper2);
+    background: linear-gradient(135deg, var(--paper) 50%, rgba(0,0,0,.18) 50%); }
+  .right .turn:hover::after { width: 26px; height: 26px; }
+  .left .turn::after { left: 0; background: linear-gradient(225deg, var(--paper) 50%, rgba(0,0,0,.18) 50%); }
+  .left .turn:hover::after { width: 26px; height: 26px; }
+
+  .v { cursor: pointer; border-radius: 2px; transition: background .15s; }
+  .v:hover { background: color-mix(in srgb, var(--hl-y) 40%, transparent); }
+  .v.hl-y { background: var(--hl-y); }
+  .v.hl-g { background: var(--hl-g); }
+  .v.hl-r { background: var(--hl-r); }
+  .book[data-theme="light"] { --hl-y:#fbe39a; --hl-g:#cfe7b6; --hl-r:#f6c2b9; }
+  .book[data-theme="sepia"] { --hl-y:#ecc979; --hl-g:#c3d595; --hl-r:#e7a995; }
+  .book[data-theme="dark"]  { --hl-y:#5e4c1c; --hl-g:#2f4b27; --hl-r:#5e2b25; }
+
+  .marker { position: absolute; z-index: 10; display: none; align-items: center; gap: 6px; padding: 6px 8px;
+    background: #2a1c12; border-radius: 999px; box-shadow: 0 6px 18px rgba(0,0,0,.35); -webkit-app-region: no-drag; }
+  .marker.open { display: flex; animation: pop .14s ease-out; }
+  @keyframes pop { from { transform: scale(.85); opacity: 0 } }
+  .marker .ref { color: #d9c7a6; font: 600 10px "Segoe UI"; letter-spacing: .06em; padding: 0 4px 0 6px; white-space: nowrap; }
+  .marker button { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; display: grid; place-items: center; }
+  .marker button[data-c="y"] { background: #f4d35e; }
+  .marker button[data-c="g"] { background: #8cc56b; }
+  .marker button[data-c="r"] { background: #e36a5a; }
+  .marker button[data-c]:hover { transform: scale(1.12); }
+  .marker button.cur { border-color: #fff; }
+  .marker .tool { background: none; color: #d9c7a6; }
+  .marker .tool:hover { background: rgba(255,255,255,.12); }
+  .marker svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .v sup { font: 700 .6em "Segoe UI", sans-serif; color: var(--accent); margin: 0 2px 0 3px; vertical-align: .5em; }
+
+  .ch-head { text-align: center; margin: 4px 0 12px; text-align: center; }
+  .ch-head .bk { font: 400 26px Georgia, serif; letter-spacing: .06em; color: var(--ink); margin: 6px 0 2px; }
+  .ch-head .orn { color: var(--accent); font-size: 13px; letter-spacing: .5em; opacity: .8; }
+  .ch-head .cn { font: 400 13px "Segoe UI", sans-serif; letter-spacing: .3em; text-transform: uppercase; color: var(--accent); }
+  .ch-head .big { display: block; font: 400 40px/1 Georgia, serif; color: var(--accent); margin-top: 2px; }
+  .endmark { text-align: center; color: var(--muted); margin-top: 40%; font: italic 14px Georgia, serif; line-height: 1.8; }
+  .msg { text-align: center; color: var(--muted); margin-top: 35%; font: 14px/1.7 Georgia, serif; }
+  .msg button { margin-top: 10px; }
+
+  /* ---------- Folha virando ---------- */
+  @property --pf { syntax: '<number>'; inherits: true; initial-value: 0; }
+  .leaf { position: absolute; top: 0; width: 50%; height: 100%; transform-style: preserve-3d; display: none; z-index: 4; --pf: 0; }
+  .leaf.show { display: block; }
+  .leaf.anim { transition: transform var(--t) cubic-bezier(.3,.1,.3,1), --pf var(--t) cubic-bezier(.3,.1,.3,1); }
+  .leaf.fwd { left: 50%; transform-origin: left center; }
+  .leaf.back { left: 0; transform-origin: right center; }
+  .leaf .face { position: absolute; inset: 0; backface-visibility: hidden; box-shadow: none !important; }
+  .leaf .face::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
+  .leaf .front::after { opacity: calc(var(--pf) * 1.5); }
+  .leaf .backf::after { opacity: calc((1 - var(--pf)) * 1.5); }
+  .leaf.fwd .front::after  { background: linear-gradient(to left, rgba(0,0,0,.28), transparent 70%); }
+  .leaf.fwd .backf::after  { background: linear-gradient(to right, rgba(0,0,0,.28), transparent 70%); }
+  .leaf.back .front::after { background: linear-gradient(to right, rgba(0,0,0,.28), transparent 70%); }
+  .leaf.back .backf::after { background: linear-gradient(to left, rgba(0,0,0,.28), transparent 70%); }
+  .leaf .backf { transform: rotateY(180deg); }
+  body.dragging, body.dragging * { cursor: grabbing !important; user-select: none !important; }
+  .spread > .page { cursor: grab; }
+  .spread > .page .v, .spread > .page button { cursor: pointer; }
+
+  .measure { position: absolute; visibility: hidden; pointer-events: none; left: 50%; top: 0; }
+
+  .ribbon { position: absolute; top: -2px; right: 150px; width: 16px; height: 74px; z-index: 6; pointer-events: none;
+    background: linear-gradient(90deg, #7d1d14, #a8291c 50%, #7d1d14);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%); filter: drop-shadow(0 2px 2px rgba(0,0,0,.3)); }
+
+  /* ---------- Índice ---------- */
+  .index { position: absolute; inset: 16px 18px 18px; display: flex; z-index: 8; opacity: 0; pointer-events: none;
+    transition: opacity .2s; -webkit-app-region: no-drag; }
+  .index.open { opacity: 1; pointer-events: auto; }
+  .index .page { box-shadow: none; }
+  .index input { width: 100%; height: 30px; border: 1px solid var(--rule); border-radius: 6px; background: transparent;
+    color: var(--ink); padding: 0 10px; font: 13px "Segoe UI"; outline: none; margin-bottom: 6px; }
+  .index input:focus { border-color: var(--accent); }
+  .ilist { flex: 1; overflow-y: auto; padding-right: 6px; }
+  .ilist::-webkit-scrollbar, .igrid::-webkit-scrollbar { width: 4px; }
+  .ilist::-webkit-scrollbar-thumb, .igrid::-webkit-scrollbar-thumb { background: var(--rule); }
+  .sec { font: 700 10px "Segoe UI"; color: var(--accent); letter-spacing: .18em; margin: 12px 0 4px; text-transform: uppercase; }
+  .bk-row { display: flex; justify-content: space-between; padding: 5px 2px; border-bottom: 1px dotted var(--rule);
+    cursor: pointer; font: 15px Georgia, serif; }
+  .bk-row span { color: var(--muted); font-size: 12px; }
+  .bk-row:hover, .bk-row.sel { color: var(--accent); }
+  .bk-row.sel { font-weight: bold; }
+  .igrid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; align-content: start; padding-right: 4px; }
+  .igrid button { aspect-ratio: 1; border: 1px solid var(--rule); border-radius: 6px; background: transparent; color: var(--ink);
+    font: 14px Georgia, serif; cursor: pointer; }
+  .igrid button:hover, .igrid button.cur { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+  .ititle { font: 400 22px Georgia, serif; text-align: center; margin: 2px 0 10px; }
+  .iclose { margin-top: 8px; align-self: center; border: 1px solid var(--rule); background: none; color: var(--muted);
+    border-radius: 999px; padding: 4px 16px; font: 12px "Segoe UI"; cursor: pointer; }
+  .iclose:hover { color: var(--accent); border-color: var(--accent); }
+
+  .toast { position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%) translateY(8px); opacity: 0; z-index: 20;
+    background: rgba(40,25,15,.88); color: #f6ead2; font-size: 12px; padding: 6px 14px; border-radius: 999px;
+    transition: .2s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
+
+  /* ---------- Folha de estudo ---------- */
+  .study .page { display: flex; flex-direction: column; }
+  .st-ref { font: 400 22px Georgia, serif; margin: 2px 0 2px; }
+  .st-ver { font: 600 10px "Segoe UI"; letter-spacing: .14em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+  .st-text { font: 16px/1.6 Georgia, serif; padding: 10px 12px; border-left: 3px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 6%, transparent); border-radius: 0 6px 6px 0; max-height: 170px; overflow-y: auto; user-select: text; }
+  .st-lbl { font: 700 10px "Segoe UI"; color: var(--accent); letter-spacing: .18em; text-transform: uppercase; margin: 14px 0 6px;
+    display: flex; justify-content: space-between; align-items: baseline; }
+  .st-lbl small { font: italic 11px Georgia, serif; letter-spacing: 0; text-transform: none; color: var(--muted); }
+  .st-note { flex: 1; min-height: 80px; resize: none; border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; outline: none;
+    background: repeating-linear-gradient(transparent 0 25px, var(--rule) 25px 26px); background-attachment: local;
+    color: var(--ink); font: italic 15px/26px Georgia, serif; }
+  .st-note:focus { border-color: var(--accent); }
+  .st-list { flex: 1; overflow-y: auto; padding-right: 6px; }
+  .st-list::-webkit-scrollbar { width: 4px; } .st-list::-webkit-scrollbar-thumb { background: var(--rule); }
+  .xr { padding: 7px 4px 8px; border-bottom: 1px dotted var(--rule); cursor: pointer; }
+  .xr:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+  .xr b { font: 600 12px "Segoe UI"; color: var(--accent); letter-spacing: .03em; display: flex; align-items: center; gap: 6px; }
+  .xr p { font: 13.5px/1.45 Georgia, serif; color: var(--ink); margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .xr .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .dot.y { background: #f4d35e; } .dot.g { background: #8cc56b; } .dot.r { background: #e36a5a; }
+  .st-empty { color: var(--muted); font: italic 14px/1.6 Georgia, serif; text-align: center; margin-top: 30%; }
+  .st-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font: 10px "Segoe UI"; color: var(--muted); }
+  .v.note sup::after { content: "✎"; margin-left: 2px; font-size: 1.05em; }
+  .v.flash { animation: flash 1.8s ease-out; }
+  @keyframes flash { 0%, 30% { background: color-mix(in srgb, var(--accent) 30%, transparent); } }
+
+  /* ---------- Barra lateral ---------- */
+  .toolbar { width: 48px; margin-left: 12px; background: #f6efe1; border-radius: 6px; padding: 6px 0;
+    display: flex; flex-direction: column; align-items: center; gap: 1px; -webkit-app-region: drag;
+    box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+  .toolbar .top { display: flex; width: 100%; justify-content: space-around; margin-bottom: 4px; }
+  .toolbar button { -webkit-app-region: no-drag; width: 40px; height: 36px; border: 0; background: none; border-radius: 6px;
+    cursor: pointer; display: grid; place-items: center; color: #6b5640; }
+  .toolbar .top button { width: 20px; height: 20px; }
+  .toolbar button:hover { background: #ead9bf; color: #2b1a0d; }
+  .toolbar button.on { color: #8b2e1f; background: #ecd3bd; }
+  .toolbar svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .toolbar .top svg { width: 12px; height: 12px; stroke-width: 2.2; }
+  .toolbar hr { width: 28px; border: 0; border-top: 1px solid #e0d2b8; margin: 3px 0; }
+
+  /* ---------- Capa (menu inicial) ---------- */
+  .home { position: absolute; inset: 0; z-index: 11; border-radius: 8px 12px 12px 8px; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; padding-left: 30px;
+    background:
+      radial-gradient(ellipse at 38% 22%, rgba(255,214,160,.13), transparent 55%),
+      radial-gradient(ellipse at 75% 95%, rgba(0,0,0,.40), transparent 60%),
+      repeating-linear-gradient(45deg, rgba(0,0,0,.045) 0 2px, transparent 2px 5px),
+      repeating-linear-gradient(-45deg, rgba(255,255,255,.018) 0 1px, transparent 1px 4px),
+      linear-gradient(135deg, #6e3f25, #4b2816 55%, #2f170c);
+    box-shadow: 0 6px 18px rgba(0,0,0,.35), inset 0 0 50px rgba(0,0,0,.45);
+    -webkit-app-region: drag; transform-origin: left center; transform: perspective(2200px) rotateY(0deg);
+    transition: transform .8s cubic-bezier(.45,.05,.3,1), opacity .5s ease, visibility 0s; }
+  .home.hide { transform: perspective(2200px) rotateY(-100deg); opacity: 0; visibility: hidden; pointer-events: none;
+    transition: transform .8s cubic-bezier(.45,.05,.3,1), opacity .55s ease .25s, visibility 0s .8s; }
+  .home::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 34px;
+    background: linear-gradient(90deg, rgba(0,0,0,.6), rgba(0,0,0,.18) 55%, rgba(255,230,190,.07) 82%, rgba(0,0,0,.45));
+    box-shadow: 1px 0 0 rgba(201,162,74,.35); }
+  .h-frame { position: absolute; inset: 20px 22px 20px 54px; border: 1.5px solid rgba(214,178,96,.85); pointer-events: none;
+    box-shadow: 0 1px 0 rgba(0,0,0,.4), inset 0 1px 0 rgba(0,0,0,.4); }
+  .h-frame::after { content: ""; position: absolute; inset: 6px; border: 1px solid rgba(214,178,96,.45); }
+  .h-frame i { position: absolute; width: 11px; height: 11px; transform: rotate(45deg);
+    background: linear-gradient(135deg, #f7e39a, #c3912f 60%, #e9c86f); box-shadow: 0 1px 2px rgba(0,0,0,.5); }
+  .h-frame i:nth-child(1) { left: -6px; top: -6px; } .h-frame i:nth-child(2) { right: -6px; top: -6px; }
+  .h-frame i:nth-child(3) { left: -6px; bottom: -6px; } .h-frame i:nth-child(4) { right: -6px; bottom: -6px; }
+  .gold { background: linear-gradient(180deg, #fbeaa0 0%, #e4bf5f 38%, #a77a27 58%, #ecca72 82%, #c99c40 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 1px 0 rgba(0,0,0,.6)); }
+  .h-cross { position: relative; width: 26px; height: 38px; filter: drop-shadow(0 1px 0 rgba(0,0,0,.6)); }
+  .h-cross::before, .h-cross::after { content: ""; position: absolute; border-radius: 1px;
+    background: linear-gradient(90deg, #b8862b, #f7e39a 45%, #d4a84a 60%, #a77a27); }
+  .h-cross::before { left: 10px; top: 0; width: 6px; height: 38px; }
+  .h-cross::after { left: 0; top: 10px; width: 26px; height: 6px; background: linear-gradient(180deg, #f7e39a, #c3912f 60%, #a77a27); }
+  .h-title { font: 400 54px/1.05 "Palatino Linotype", Georgia, serif; letter-spacing: .2em; margin: 12px 0 0 .2em; }
+  .h-sub { font: 400 13px "Palatino Linotype", Georgia, serif; letter-spacing: .65em; margin: 2px 0 0 .65em; }
+  .h-orn { color: #d6b25e; opacity: .75; font-size: 12px; letter-spacing: .6em; margin: 12px 0 0 .6em; }
+  .h-menu { display: flex; flex-direction: column; gap: 9px; margin-top: 20px; -webkit-app-region: no-drag; }
+  .h-menu button { width: 280px; height: 42px; display: flex; align-items: center; gap: 14px; padding: 0 18px; cursor: pointer;
+    border: 1px solid rgba(214,178,96,.55); border-radius: 3px; color: #e2c06a;
+    background: linear-gradient(rgba(0,0,0,.20), rgba(0,0,0,.08));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 1px 0 rgba(255,255,255,.04); transition: .2s; }
+  .h-menu button:hover { border-color: #ecca72; background: rgba(226,192,106,.10); box-shadow: 0 0 14px rgba(226,192,106,.2), inset 0 0 10px rgba(226,192,106,.08); }
+  .h-menu svg { width: 20px; height: 20px; flex: none; fill: none; stroke: #e2c06a; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 1px 0 rgba(0,0,0,.6)); }
+  .h-menu .lbl { font: 600 14px "Palatino Linotype", Georgia, serif; letter-spacing: .28em; text-transform: uppercase; }
+  .h-menu small { margin-left: auto; font: italic 11px Georgia, serif; color: rgba(226,192,106,.6); white-space: nowrap; }
+  .h-verse { margin-top: 18px; font: italic 12px Georgia, serif; color: rgba(226,192,106,.62); text-align: center; letter-spacing: .03em;
+    text-shadow: 0 1px 0 rgba(0,0,0,.6); }
+
+  /* ---------- Anotações ---------- */
+  .ann .page { display: flex; flex-direction: column; }
+  .ann .phead button { letter-spacing: .1em; }
+  .xr.sel { background: color-mix(in srgb, var(--accent) 10%, transparent); box-shadow: inset 2px 0 0 var(--accent); }
+  .xr p.has-note { font-style: italic; }
+  .xr .pen { font-style: normal; color: var(--muted); font-size: 12px; }
+  .dot.n { background: transparent; border: 1.5px solid var(--muted); }
+  .ann-colors { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font: 10px "Segoe UI"; color: var(--muted);
+    letter-spacing: .1em; text-transform: uppercase; }
+  .ann-colors button { width: 16px; height: 16px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+  .ann-colors button[data-c="y"] { background: #f4d35e; } .ann-colors button[data-c="g"] { background: #8cc56b; }
+  .ann-colors button[data-c="r"] { background: #e36a5a; }
+  .ann-colors button.cur { border-color: var(--ink); }
+  .ann-colors button[data-c=""] { background: none; color: var(--muted); border: 1px solid var(--rule); font-size: 9px; line-height: 1; }
+
+  /* ---------- Estudos (caderno) ---------- */
+  .nb { position: absolute; inset: 16px 18px 18px; z-index: 8; display: flex; opacity: 0; pointer-events: none; transition: opacity .2s;
+    -webkit-app-region: no-drag; }
+  .nb.open { opacity: 1; pointer-events: auto; }
+  .nb-page { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 16px 20px 12px 46px; position: relative; color: #2a3550;
+    background: linear-gradient(90deg, transparent 34px, #eba7a7 34px, #eba7a7 35px, transparent 35px), #fffdf6; }
+  .nb-left { border-radius: 4px 0 0 4px; box-shadow: inset -10px 0 14px -10px rgba(0,0,0,.25); }
+  .nb-right { border-radius: 0 4px 4px 0; box-shadow: inset 10px 0 14px -10px rgba(0,0,0,.25); }
+  .nb-spiral { flex: none; width: 24px; background: linear-gradient(90deg, #2a170c, #1a0e07 50%, #2a170c);
+    display: flex; flex-direction: column; justify-content: space-around; padding: 10px 0; }
+  .nb-spiral i { display: block; height: 8px; margin: 0 -9px; border-radius: 5px; position: relative; z-index: 1;
+    background: linear-gradient(#f2f2f2, #9a9a9a 55%, #d6d6d6); box-shadow: 0 2px 2px rgba(0,0,0,.45); }
+  .nb-head { flex: none; height: 30px; display: flex; align-items: center; justify-content: space-between; }
+  .nb-head span { font: 22px "Segoe Print", "Comic Sans MS", cursive; color: #1f3d7a; }
+  .nb-btn { border: 0; background: none; cursor: pointer; font: 600 11px "Segoe UI"; color: #6a7894; letter-spacing: .06em; padding: 3px 6px; border-radius: 4px; }
+  .nb-btn:hover { color: #1f3d7a; background: rgba(31,61,122,.07); }
+  .nb-new { align-self: flex-start; margin: 8px 0 6px -4px; border: 1.5px dashed #9fb6d8; border-radius: 6px; padding: 4px 12px;
+    background: none; cursor: pointer; font: 14px "Segoe Print", "Comic Sans MS", cursive; color: #1f3d7a; }
+  .nb-new:hover { background: rgba(31,61,122,.06); border-style: solid; }
+  .nb-list { flex: 1; overflow-y: auto; background: repeating-linear-gradient(transparent 0 27px, #c7d9ee 27px 28px); background-attachment: local; }
+  .nb-row { height: 28px; display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 0 4px;
+    font: 14px/28px "Segoe Print", "Comic Sans MS", cursive; }
+  .nb-row span { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .nb-row small { font: 11px "Segoe UI"; color: #8a96ad; }
+  .nb-row:hover { background: rgba(31,61,122,.05); }
+  .nb-row.sel { background: rgba(250,226,120,.45); }
+  .nb-empty { font: 14px/28px "Segoe Print", "Comic Sans MS", cursive; color: #8a96ad; padding: 0 4px; }
+  .nb-title { flex: none; width: 100%; border: 0; outline: none; background: none; height: 34px;
+    font: 20px "Segoe Print", "Comic Sans MS", cursive; color: #1f3d7a; }
+  .nb-title::placeholder, .nb-text::placeholder { color: #a9b6cc; }
+  .nb-meta { flex: none; display: flex; justify-content: space-between; align-items: center; height: 22px; font: 11px "Segoe UI"; color: #8a96ad; }
+  .nb-meta .nb-btn.warn { color: #b0372a; }
+  .nb-text { flex: 1; width: 100%; resize: none; border: 0; outline: none; padding: 0 2px; margin-top: 4px; color: #23305a;
+    font: 15px/28px "Segoe Print", "Comic Sans MS", cursive; user-select: text;
+    background: repeating-linear-gradient(transparent 0 27px, #c7d9ee 27px 28px); background-attachment: local; }
+  .nb-text::-webkit-scrollbar, .nb-list::-webkit-scrollbar { width: 4px; }
+  .nb-text::-webkit-scrollbar-thumb, .nb-list::-webkit-scrollbar-thumb { background: #c7d9ee; }
+  .nb-blank { display: none; flex: 1; align-items: center; justify-content: center; text-align: center;
+    font: 15px/28px "Segoe Print", "Comic Sans MS", cursive; color: #8a96ad; }
+  .nb-right.empty > :not(.nb-blank) { display: none; }
+  .nb-right.empty .nb-blank { display: flex; }
+
+  /* ---------- Votos ---------- */
+  .vows { position: absolute; inset: 16px 18px 18px; z-index: 8; opacity: 0; pointer-events: none; transition: opacity .25s;
+    -webkit-app-region: no-drag; }
+  .vows.open { opacity: 1; pointer-events: auto; }
+  .vw-sheet { position: absolute; inset: 0; border-radius: 4px; display: flex; flex-direction: column; align-items: center;
+    padding: 22px 46px 16px; color: #4a3820;
+    background: radial-gradient(ellipse at 50% 0%, #fffaf0, #f7efdf 70%, #efe3cb);
+    box-shadow: inset 0 0 0 10px #f3e9d6, inset 0 0 0 11px rgba(190,150,70,.75), inset 0 0 0 15px #f3e9d6, inset 0 0 0 16px rgba(190,150,70,.45); }
+  .vw-back { position: absolute; left: 24px; top: 20px; }
+  .vw-back, .vw-foot button { border: 0; background: none; cursor: pointer; font: 600 11px "Segoe UI"; letter-spacing: .06em; color: #9a7b43;
+    padding: 3px 8px; border-radius: 4px; }
+  .vw-back:hover, .vw-foot button:hover { color: #6e5122; background: rgba(190,150,70,.12); }
+  .vw-rings { position: relative; width: 46px; height: 26px; flex: none; }
+  .vw-rings i { position: absolute; top: 1px; width: 24px; height: 24px; border-radius: 50%; border: 2.5px solid #c39a45;
+    box-shadow: inset 0 0 0 1px rgba(255,240,200,.7), 0 1px 1px rgba(0,0,0,.15); }
+  .vw-rings i:first-child { left: 2px; } .vw-rings i:last-child { right: 2px; border-color: #d4ad5a; }
+  .vw-title { font: 32px/1.2 "Segoe Script", "Palatino Linotype", Georgia, serif; color: #9a7433; margin-top: 2px; }
+  .vw-orn { font-size: 16px; line-height: 1; color: #c39a45; letter-spacing: .4em; margin-left: .4em; }
+  .vw-fields { flex: none; display: flex; gap: 18px; margin: 10px 0 6px; width: 100%; }
+  .vw-fields label { flex: 1; display: flex; align-items: baseline; gap: 8px; font: 600 10px "Segoe UI"; letter-spacing: .14em;
+    text-transform: uppercase; color: #a8884e; border-bottom: 1px solid rgba(190,150,70,.45); padding-bottom: 2px; }
+  .vw-fields label:last-child { flex: none; width: 290px; }
+  .vw-fields input { flex: 1; min-width: 0; border: 0; outline: none; background: none; color: #4a3820;
+    font: italic 15px Georgia, serif; letter-spacing: 0; text-transform: none; }
+  .vw-fields input::-webkit-calendar-picker-indicator { opacity: .5; cursor: pointer; }
+  .vw-text { flex: 1; width: 100%; resize: none; border: 0; outline: none; padding: 4px 4px 0; color: #3e2e18; user-select: text;
+    font: italic 16px/29px Georgia, "Palatino Linotype", serif;
+    background: repeating-linear-gradient(transparent 0 28px, rgba(190,150,70,.22) 28px 29px); background-attachment: local; }
+  .vw-text::placeholder, .vw-fields input::placeholder { color: #c4ae86; }
+  .vw-text::-webkit-scrollbar { width: 4px; } .vw-text::-webkit-scrollbar-thumb { background: rgba(190,150,70,.4); }
+  .vw-foot { flex: none; width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 6px;
+    font: 11px "Segoe UI"; color: #a8884e; }
+  /* Busca e ajustes seguem o papel do livro. */
+  button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent, #8b2e1f); outline-offset: 3px; }
+  .panel { position: absolute; inset: 16px 18px 18px; z-index: 12; display: none; background: var(--paper); color: var(--ink); border-radius: 4px; padding: 22px 28px; flex-direction: column; -webkit-app-region: no-drag; }
+  .panel.open { display: flex; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 10px; }
+  .panel h2 { font: 24px Georgia, serif; }
+  .panel .iclose { margin: 0; }
+  .search-input { width: 100%; padding: 11px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper2); color: var(--ink); font: 14px 'Segoe UI', sans-serif; }
+  .help { font: 12px/1.6 'Segoe UI', sans-serif; color: var(--muted); margin: 7px 0 12px; }
+  .results { overflow-y: auto; flex: 1; min-height: 0; }
+  .search-result { display: block; width: 100%; text-align: left; padding: 12px 8px; border: 0; border-bottom: 1px solid var(--rule); color: var(--ink); background: none; cursor: pointer; }
+  .search-result:hover, .search-result:focus-visible { background: var(--paper2); }
+  .search-result b { color: var(--accent); font: 600 12px 'Segoe UI'; }
+  .search-result p { margin-top: 5px; font: 15px/1.55 Georgia, serif; }
+  .settings-content { overflow-y: auto; }
+  .setting-row { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--rule); padding: 12px 0; gap: 12px; font-size: 13px; }
+  .setting-row > div { display: flex; gap: 6px; }
+  .setting-row button, .backup-actions button { border: 1px solid var(--rule); border-radius: 5px; padding: 7px 12px; color: var(--ink); background: var(--paper2); cursor: pointer; font: 13px 'Segoe UI'; }
+  .settings-section { font: 600 11px 'Segoe UI'; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 18px 0 8px; }
+  .backup-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .save-error { display: none; position: absolute; z-index: 25; bottom: 12px; left: 24px; right: 24px; padding: 10px; background: #8b2e1f; color: #fff4df; border-radius: 6px; font: 12px/1.5 'Segoe UI'; }
+  .save-error.open { display: block; }
+  .home .h-menu button { width: 330px; }
+  .h-menu .lbl { letter-spacing: .18em; }
+  .h-menu small { color: #dac18c; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .pfoot .page-position { font: 11px 'Segoe UI'; }
+  .page-nav { position: absolute; border: 1px solid var(--rule); border-radius: 4px; background: none; color: var(--accent); width: 30px; height: 24px; cursor: pointer; font-size: 18px; line-height: 1; }
+  .page-nav.prev { left: 0; } .page-nav.next { right: 0; }
+  .book[data-theme="light"] { --muted: #78684f; }
+  .book[data-theme="sepia"] { --muted: #79603e; }
+  .book[data-theme="dark"] { --muted: #ad9d84; }
+  .book[data-theme="dark"] .nb-page { background: linear-gradient(90deg, transparent 34px, #70473e 34px, #70473e 35px, transparent 35px), var(--paper); color: var(--ink); }
+  .book[data-theme="dark"] :is(.nb-title, .nb-text, .nb-head span, .nb-btn, .nb-new, .nb-row, .nb-empty) { color: var(--ink); }
+  .book[data-theme="dark"] :is(.nb-text, .nb-list) { background-image: repeating-linear-gradient(transparent 0 27px, var(--rule) 27px 28px); }
+  .book[data-theme="dark"] .vw-sheet { background: var(--paper); color: var(--ink); box-shadow: inset 0 0 0 10px var(--paper2), inset 0 0 0 11px var(--rule); }
+  .book[data-theme="dark"] :is(.vw-text, .vw-fields input) { color: var(--ink); }
+  .book[data-theme="dark"] { color-scheme: dark; }
+  .book[data-theme="dark"] :is(.vw-title, .vw-foot, .vw-back, .vw-fields label, .vw-foot button) { color: var(--accent); }
+  .book[data-theme="dark"] .nb-row.sel { background: #4a3e24; box-shadow: inset 2px 0 var(--accent); }
+  .st-text::-webkit-scrollbar { width: 4px; }
+  .st-text::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 4px; }
+  .book[data-theme="dark"] .vw-text { background-image: repeating-linear-gradient(transparent 0 28px, var(--rule) 28px 29px); }
+  body.dark .toolbar { background: #29241e; }
+  body.dark .toolbar button { color: #d5c3a6; }
+  body.dark .toolbar button:hover, body.dark .toolbar button.on { background: #493b2a; color: #f2d398; }
+  body.dark .toolbar hr { border-color: #4a4032; }
+  body.compact { width: 440px; height: 640px; }
+  body.compact .book { width: 380px; height: 640px; }
+  body.compact .cover { padding: 14px 12px 16px; }
+  body.compact .cover::before, body.compact #pR, body.compact .ribbon { display: none; }
+  body.compact .spread > .page { width: 100%; cursor: auto; padding: 18px 22px 10px; border-radius: 4px; }
+  body.compact .measure { width: 100%; left: 0; }
+  body.compact .page.left { background: linear-gradient(var(--paper), var(--paper2)); }
+  body.compact .pbody { text-align: left; }
+  body.compact .phead { font-size: 9px; letter-spacing: .05em; gap: 6px; }
+  body.compact .phead .compact-ref { margin-left: auto; }
+  body.compact .turn { bottom: -8px; }
+  body.compact .left .turn { left: -22px; }
+  body.compact .right .turn { right: -22px; }
+  body.compact .index, body.compact .nb { inset: 14px 12px 16px; flex-direction: column; }
+  body.compact .index > .page { width: 100%; min-height: 0; padding: 16px 20px; }
+  body.compact .index > .page:first-child { height: 48%; }
+  body.compact .index > .page:last-child { height: 52%; }
+  body.compact .study > .page:first-child { height: 64%; }
+  body.compact .study > .page:last-child { height: 36%; }
+  body.compact .ann > .page:first-child { height: 40%; }
+  body.compact .ann > .page:last-child { height: 60%; overflow-y: auto; }
+  body.compact .st-note { min-height: 50px; }
+  body.compact .st-text { font-size: 14px; max-height: 100px; }
+  body.compact .st-ref { font-size: 20px; }
+  body.compact .st-lbl { margin-top: 8px; }
+  body.compact .st-foot { gap: 6px; font-size: 9px; }
+  body.compact .nb-left { flex: 0 0 28%; }
+  body.compact .nb-right { min-height: 0; }
+  body.compact .nb-spiral { display: none; }
+  body.compact .nb-page { padding: 12px 14px 12px 42px; }
+  body.compact .nb-head span { font-size: 20px; }
+  body.compact .nb-meta { flex-wrap: wrap; height: auto; min-height: 28px; gap: 4px; }
+  body.compact .vw-sheet { padding: 48px 24px 14px; }
+  body.compact .vw-fields { flex-direction: column; }
+  body.compact .vw-fields label:last-child { width: 100%; }
+  body.compact .vw-foot { flex-wrap: wrap; gap: 6px; }
+  body.compact .h-frame { inset: 18px 16px 18px 36px; }
+  body.compact .home { padding-left: 16px; }
+  body.compact .h-title { font-size: 42px; }
+  body.compact .h-menu button { width: 286px; padding: 0 10px; gap: 8px; }
+  body.compact .h-menu .lbl { font-size: 12px; letter-spacing: .12em; }
+  body.compact .h-menu small { font-size: 10px; }
+  body.compact .h-verse { max-width: 260px; line-height: 1.7; }
+  body.compact .panel { inset: 14px 12px 16px; padding: 20px; }
+  body.compact .panel h2 { font-size: 21px; }
+  body.compact .setting-row { align-items: flex-start; }
+  body.compact .toast { max-width: 330px; white-space: normal; text-align: center; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+  .ann-filters { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  .ann-filters input { grid-column: 1 / -1; margin: 0; }
+  .ann-filters select, .topic-input { min-width: 0; width: 100%; height: 29px; border: 1px solid var(--rule); border-radius: 5px; background: var(--paper); color: var(--ink); padding: 0 7px; font: 12px 'Segoe UI'; }
+  .topic-input { flex: none; }
+  .topic-label { display: block; flex: none; font: 600 10px 'Segoe UI'; text-transform: uppercase; color: var(--accent); letter-spacing: .08em; margin: 8px 0 5px; }
+  .topic-label small { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
+  .topic-status { flex: none; min-height: 14px; font: 10px/1.4 'Segoe UI'; color: var(--muted); margin-top: 3px; }
+  .topic-status.error { color: var(--accent); }
+  .topic-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+  .topic-chip { padding: 2px 6px; border: 1px solid var(--rule); border-radius: 999px; font: 10px/1.3 'Segoe UI'; color: var(--accent); overflow-wrap: anywhere; }
+  .ann-count { display: flex; align-items: center; justify-content: space-between; flex: none; font: 10px 'Segoe UI'; color: var(--muted); margin: 0 0 6px; gap: 6px; }
+  .ann-reset { border: 0; background: none; color: var(--accent); cursor: pointer; font: inherit; padding: 2px; }
+  .ann-row { display: block; width: 100%; border: 0; background: none; text-align: left; color: var(--ink); }
+  .ann .st-empty { margin-top: 12px; font-size: 13px; }
+  .ann .st-note { min-height: 64px; }
+  .ann .st-text { flex-shrink: 0; }
+  body.compact .ann .st-text { max-height: 64px; }
+  body.compact .ann .st-lbl { margin: 6px 0 4px; }
+  body.compact .ann .topic-label { margin-top: 5px; }
+  body.compact .ann > .page { padding: 12px 20px; }
+  body.compact .ann .phead { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+  <div class="book" id="book" data-theme="light">
+    <div class="cover">
+      <div class="spread" id="spread">
+        <div class="page left" id="pL"></div>
+        <div class="page right" id="pR"></div>
+        <div class="leaf" id="leaf"><div class="page face front"></div><div class="page face backf"></div></div>
+        <div class="page right measure" id="measure"><div class="phead"></div><div class="pbody" id="mbody"></div><div class="pfoot"></div></div>
+      </div>
+    </div>
+    <div class="ribbon"></div>
+
+    <div class="index" id="index">
+      <div class="page left">
+        <input id="filter" placeholder="Buscar livro…" autocomplete="off">
+        <div class="ilist" id="ilist"></div>
+      </div>
+      <div class="page right" style="display:flex;flex-direction:column">
+        <div class="ititle" id="ititle"></div>
+        <div class="igrid" id="igrid"></div>
+        <button class="iclose" id="iclose">Fechar índice</button>
+      </div>
+    </div>
+    <div class="index study" id="study">
+      <div class="page left" id="stL"></div>
+      <div class="page right" id="stR"></div>
+    </div>
+    <div class="marker" id="marker">
+      <span class="ref" id="mRef"></span>
+      <button data-c="y" title="Amarelo"></button>
+      <button data-c="g" title="Verde"></button>
+      <button data-c="r" title="Vermelho"></button>
+      <button class="tool" data-act="study" title="Estudar: anotações e referências cruzadas"><svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5zM12 6v13"/></svg></button>
+      <button class="tool" data-act="copy" title="Copiar versículo"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/></svg></button>
+      <button class="tool" data-act="clear" title="Remover marcação"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="index ann" id="ann">
+      <div class="page left" id="annL"></div>
+      <div class="page right" id="annR"></div>
+    </div>
+
+    <div class="nb" id="nb">
+      <div class="nb-page nb-left">
+        <div class="nb-head"><span>Meus estudos</span><button class="nb-btn" data-act="home">‹ Menu</button></div>
+        <button class="nb-new" data-act="new">+ Novo estudo</button>
+        <div class="nb-list" id="nbList"></div>
+      </div>
+      <div class="nb-spiral" id="nbSpiral"></div>
+      <div class="nb-page nb-right" id="nbR">
+        <input class="nb-title" id="nbTitle" placeholder="Título do estudo…" autocomplete="off">
+        <div class="nb-meta"><span id="nbDate"></span><span id="nbSaved"></span><button class="nb-btn" data-act="del" id="nbDel">Excluir</button></div>
+        <textarea class="nb-text" id="nbText" placeholder="Escreva aqui o que você aprendeu…"></textarea>
+        <div class="nb-blank">Seu caderno está em branco.<br>Clique em “+ Novo estudo”<br>para começar a escrever.</div>
+      </div>
+    </div>
+
+    <div class="vows" id="vows">
+      <div class="vw-sheet">
+        <button class="vw-back" data-act="home">‹ Menu</button>
+        <div class="vw-rings"><i></i><i></i></div>
+        <div class="vw-title">Meus Votos</div>
+        <div class="vw-orn">❦</div>
+        <div class="vw-fields">
+          <label>Para <input id="vwTo" placeholder="nome" autocomplete="off"></label>
+          <label>Data do casamento <input id="vwDate" type="date"></label>
+        </div>
+        <textarea class="vw-text" id="vwText" placeholder="Escreva aqui os seus votos…"></textarea>
+        <div class="vw-foot"><span id="vwCount"></span><span id="vwSaved">Salvo automaticamente</span><button data-act="copy">Copiar votos</button></div>
+      </div>
+    </div>
+
+    <div class="home" id="home">
+      <div class="h-frame"><i></i><i></i><i></i><i></i></div>
+      <div class="h-cross"></div>
+      <div class="h-title gold">BÍBLIA</div>
+      <div class="h-sub gold">SAGRADA</div>
+      <div class="h-orn">✦ ✦ ✦</div>
+      <div class="h-menu">
+        <button data-go="bible"><svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1.5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5zM12 6v13"/></svg><span class="lbl gold">Bíblia</span><small id="hBible"></small></button>
+        <button data-go="ann"><svg viewBox="0 0 24 24"><path d="M7 3h10v18l-5-4-5 4z"/></svg><span class="lbl gold">Anotações</span><small id="hAnn"></small></button>
+        <button data-go="nb"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM6 7H4M6 12H4M6 17H4M10 8h5M10 12h5"/></svg><span class="lbl gold">Estudos</span><small id="hNb"></small></button>
+        <button data-go="vows"><svg viewBox="0 0 24 24"><circle cx="9" cy="14" r="5"/><circle cx="15" cy="14" r="5"/><path d="M10 5l2-2 2 2-2 2z"/></svg><span class="lbl gold">Votos</span><small id="hVows"></small></button>
+      </div>
+      <div class="h-verse">“Lâmpada para os meus pés é a tua palavra” — Salmos 119:105</div>
+    </div>
+
+    <section class="panel" id="searchPanel" aria-label="Buscar na Bíblia">
+      <div class="panel-head"><h2>Buscar na Bíblia</h2><button class="iclose" id="searchClose">Fechar</button></div>
+      <input class="search-input" id="searchInput" aria-label="Referência ou palavras" placeholder="João 3:16, Sl 23 ou uma palavra…" autocomplete="off">
+      <div class="help" id="searchStatus" role="status">Busque uma referência ou palavras na versão atual.</div>
+      <div class="results" id="searchResults"></div>
+    </section>
+    <section class="panel" id="settingsPanel" aria-label="Ajustes e backup">
+      <div class="panel-head"><h2>Ajustes e backup</h2><button class="iclose" id="settingsClose">Fechar</button></div>
+      <div class="settings-content">
+        <div class="setting-row"><span>Tamanho da letra</span><div><button id="bSmall" aria-label="Diminuir letra">A−</button><button id="bBig" aria-label="Aumentar letra">A+</button></div></div>
+        <div class="setting-row"><span>Tema do papel</span><button id="bTheme">Claro</button></div>
+        <div class="setting-row"><span>Transparência</span><button id="bOpacity">100%</button></div>
+        <div class="setting-row"><span>Escala da janela</span><button id="bZoom">100%</button></div>
+        <div class="settings-section">Seus dados</div>
+        <p class="help">Cada edição é salva no computador. Uma cópia anterior é preservada automaticamente. Exporte um backup para guardar em outro lugar.</p>
+        <div class="backup-actions"><button id="bExport">Exportar backup</button><button id="bImport">Restaurar backup</button></div>
+        <p class="help" id="backupStatus" role="status"></p>
+        <div class="settings-section">Atalhos</div>
+        <p class="help">Ctrl + F: buscar · Ctrl + M: modo compacto<br>← / →: virar página · + / −: tamanho da letra<br>Esc: fechar painel</p>
+      </div>
+    </section>
+    <div class="save-error" id="saveError" role="alert"></div>
+    <div class="toast" id="toast" role="status"></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="top">
+      <button id="bMin" title="Minimizar"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+      <button id="bClose" title="Fechar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <button id="bHome" title="Capa (menu)"><svg viewBox="0 0 24 24"><path d="M5 3h13v18H5zM5 3v18M9 7h6M12 10v6M10 12h4"/></svg></button>
+    <button id="bTop" title="Sempre visível"><svg viewBox="0 0 24 24"><path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7"/></svg></button>
+    <button id="bBooks" title="Índice (livros e capítulos)"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM4 5v16M8 7h7M8 11h5"/></svg></button>
+    <button id="bPrev" title="Página anterior (←)"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button id="bNext" title="Próxima página (→)"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+    <hr>
+    <button id="bSearch" title="Buscar na Bíblia (Ctrl+F)"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M15 15l6 6"/></svg></button>
+    <button id="bCompact" title="Uma página / livro aberto (Ctrl+M)"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18"/></svg></button>
+    <button id="bSettings" title="Ajustes e backup"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="9" cy="18" r="2"/></svg></button>
+    <button id="bNotes" title="Anotações (versículos salvos)"><svg viewBox="0 0 24 24"><path d="M5 4h10l4 4v12H5zM15 4v4h4M8 12h8M8 16h5"/></svg></button>
+    <button id="bCopy" title="Copiar versículos destacados"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/></svg></button>
+  </div>
+
+<script src="search.js"></script>
+<script src="note-topics.js"></script>
+<script>
+const BOOKS = [
+  'Gênesis','Êxodo','Levítico','Números','Deuteronômio','Josué','Juízes','Rute','1 Samuel','2 Samuel',
+  '1 Reis','2 Reis','1 Crônicas','2 Crônicas','Esdras','Neemias','Ester','Jó','Salmos','Provérbios',
+  'Eclesiastes','Cânticos','Isaías','Jeremias','Lamentações','Ezequiel','Daniel','Oséias','Joel','Amós',
+  'Obadias','Jonas','Miquéias','Naum','Habacuque','Sofonias','Ageu','Zacarias','Malaquias',
+  'Mateus','Marcos','Lucas','João','Atos','Romanos','1 Coríntios','2 Coríntios','Gálatas','Efésios',
+  'Filipenses','Colossenses','1 Tessalonicenses','2 Tessalonicenses','1 Timóteo','2 Timóteo','Tito','Filemom',
+  'Hebreus','Tiago','1 Pedro','2 Pedro','1 João','2 João','3 João','Judas','Apocalipse'];
+const BOOKS_EN = ['Genesis','Exodus','Leviticus','Numbers','Deuteronomy','Joshua','Judges','Ruth','1 Samuel','2 Samuel',
+  '1 Kings','2 Kings','1 Chronicles','2 Chronicles','Ezra','Nehemiah','Esther','Job','Psalms','Proverbs',
+  'Ecclesiastes','Song of Solomon','Isaiah','Jeremiah','Lamentations','Ezekiel','Daniel','Hosea','Joel','Amos',
+  'Obadiah','Jonah','Micah','Nahum','Habakkuk','Zephaniah','Haggai','Zechariah','Malachi',
+  'Matthew','Mark','Luke','John','Acts','Romans','1 Corinthians','2 Corinthians','Galatians','Ephesians',
+  'Philippians','Colossians','1 Thessalonians','2 Thessalonians','1 Timothy','2 Timothy','Titus','Philemon',
+  'Hebrews','James','1 Peter','2 Peter','1 John','2 John','3 John','Jude','Revelation'];
+const bk = i => (S.version === 'KJV' ? BOOKS_EN : BOOKS)[i];
+const VERSIONS = ['ACF', 'NVI', 'AA', 'KJV'];
+const THEMES = ['light', 'sepia', 'dark'];
+const OPACITIES = [1, 0.9, 0.75, 0.6];
+const ZOOMS = [1, 0.85, 0.72, 1.15];
+const FLIP_MS = 700;
+
+const $ = id => document.getElementById(id);
+const disk = window.api.readData();
+const hasDiskData = Object.keys(disk.data || {}).length > 0;
+const failedSaves = new Set();
+function saveWarning(message) {
+  $('saveError').textContent = message;
+  $('saveError').classList.toggle('open', !!message);
+}
+const store = {
+  get(k, d) {
+    if (hasDiskData) return disk.data[k] ?? d;
+    try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; }
+  },
+  set(k, v) {
+    try {
+      const result = window.api.saveData(k, v);
+      if (!result.ok) throw new Error(result.error);
+      failedSaves.delete(k);
+      if (!failedSaves.size) saveWarning('');
+      // Preserve compatibility with the original app during migration.
+      try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
+      return true;
+    } catch (err) {
+      failedSaves.add(k);
+      saveWarning('Não foi possível salvar. Mantenha o aplicativo aberto e tente novamente. ' + err.message);
+      return false;
+    }
+  },
+};
+const old = store.get('leitura', {});
+let S = { version: old.version || 'ACF', book: old.book || 0, chapter: old.chapter || 0, first: old.first || 0,
+  fs: old.fs && old.fs <= 22 ? old.fs : 16, theme: old.theme || 'light' };
+// destaques: { "livro:capítulo": { versículo: "y" | "g" | "r" } } — versões antigas guardavam só uma lista (amarelo)
+let hl = store.get('destaques', {});
+for (const k in hl) if (Array.isArray(hl[k])) hl[k] = Object.fromEntries(hl[k].map(i => [i, 'y']));
+let notes = store.get('notas', {});   // { "livro.capítulo.versículo": "texto" }
+let topics = store.get('temas', {});  // Themes are separate so existing note text stays intact.
+const cache = {};
+let bible = null, pages = [], spread = 0, busy = false;
+let compact = false;
+const stride = () => compact ? 1 : 2;
+const save = () => store.set('leitura', S);
+
+function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('show'), 1400); }
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function applyLook() {
+  $('book').dataset.theme = S.theme;
+  document.body.classList.toggle('dark', S.theme === 'dark');
+  $('bTheme').textContent = { light: 'Claro', sepia: 'Sépia', dark: 'Noturno' }[S.theme];
+  document.documentElement.style.setProperty('--fs', S.fs + 'px');
+  document.documentElement.style.setProperty('--dur', FLIP_MS + 'ms');
+}
+
+/* ---------- Paginação: distribui o capítulo em páginas que cabem no papel ---------- */
+function paginate(b, c) {
+  const body = $('mbody'), verses = bible[b][c], out = [];
+  const fits = () => body.scrollHeight <= body.clientHeight + 1;
+  body.innerHTML = '';
+  let first = 0;
+  const flush = next => { out.push({ html: body.innerHTML, first }); body.innerHTML = ''; first = next; };
+
+  body.innerHTML = '<div class="ch-head">' + (c === 0
+    ? '<div class="orn">✦ ✦ ✦</div><div class="bk">' + bk(b) + '</div><div class="cn">Capítulo<span class="big">1</span></div>'
+    : '<div class="cn">Capítulo<span class="big">' + (c + 1) + '</span></div>') + '</div>';
+
+  verses.forEach((text, i) => {
+    let words = text.split(' '), withNum = true;
+    while (words.length) {
+      const span = document.createElement('span');
+      span.className = 'v'; span.dataset.i = i;
+      if (withNum) span.innerHTML = '<sup>' + (i + 1) + '</sup>';
+      const tn = document.createTextNode(words.join(' '));
+      span.appendChild(tn);
+      const gap = document.createTextNode(' ');
+      body.appendChild(span); body.appendChild(gap);
+      if (fits()) break;
+      let lo = 0, hi = words.length - 1;
+      while (lo < hi) { const mid = (lo + hi + 1) >> 1; tn.data = words.slice(0, mid).join(' '); if (fits()) lo = mid; else hi = mid - 1; }
+      if (lo === 0) {
+        span.remove(); gap.remove();
+        if (!body.textContent.trim()) { lo = 1; body.appendChild(span); body.appendChild(gap); tn.data = words[0]; }
+        else { flush(i); continue; }
+      } else tn.data = words.slice(0, lo).join(' ');
+      flush(i);
+      words = words.slice(lo); withNum = false;
+    }
+  });
+  if (body.innerHTML) flush(0);
+  if (!compact && out.length % 2) out.push({ end: true, first: verses.length });
+  return out;
+}
+
+function pageHTML(p, side, idx) {
+  if (!p) return '';
+  const head = compact ? '<div class="phead"><button data-act="index">' + bk(S.book) + '</button><span class="compact-ref">Cap. ' + (S.chapter + 1) + '</span><button class="ver" data-act="ver">' + S.version + '</button></div>' : side === 'left'
+    ? '<div class="phead"><button data-act="index">' + bk(S.book) + '</button><span></span></div>'
+    : '<div class="phead"><span>Capítulo ' + (S.chapter + 1) + '</span><button class="ver" data-act="ver">' + S.version + '</button></div>';
+  let body = p.end
+    ? '<div class="endmark">❦<br>Fim de ' + bk(S.book) + ' ' + (S.chapter + 1) + (isLast() ? '' : '<br><small>vire a página para continuar</small>') + '</div>'
+    : p.html;
+  return head + '<div class="pbody">' + body + '</div><div class="pfoot"><span class="page-position">' + (idx + 1) + ' / ' + pages.length + '</span>' +
+    (compact ? '<button class="page-nav prev" data-act="prev" aria-label="Página anterior">‹</button><button class="page-nav next" data-act="next" aria-label="Próxima página">›</button>' :
+    '<button class="turn" data-act="' + (side === 'left' ? 'prev' : 'next') + '" title="' + (side === 'left' ? 'Voltar página' : 'Virar página') + '"></button>') + '</div>';
+}
+const isLast = () => S.book === 65 && S.chapter === bible[65].length - 1;
+
+function markHL(el) {
+  const marks = hl[S.book + ':' + S.chapter] || {};
+  el.querySelectorAll('.v').forEach(v => {
+    v.classList.remove('hl-y', 'hl-g', 'hl-r');
+    const c = marks[v.dataset.i]; if (c) v.classList.add('hl-' + c);
+    v.classList.toggle('note', !!notes[S.book + '.' + S.chapter + '.' + v.dataset.i]);
+  });
+}
+function showSpread() {
+  const first = spread * stride();
+  $('pL').innerHTML = pageHTML(pages[first], 'left', first); markHL($('pL'));
+  $('pR').innerHTML = compact ? '' : pageHTML(pages[first + 1], 'right', first + 1); markHL($('pR'));
+  S.first = pages[first].first; save();
+}
+
+async function loadVersion(v) {
+  if (cache[v]) return cache[v];
+  $('pL').innerHTML = ''; $('pR').innerHTML = '<div class="msg">Baixando a Bíblia (' + v + ')…<br><small>Só na primeira vez — depois funciona offline.</small></div>';
+  cache[v] = await window.api.loadBible(v);
+  return cache[v];
+}
+
+async function openAt(keepVerse) {
+  applyLook();
+  try { bible = await loadVersion(S.version); }
+  catch (err) {
+    $('pR').innerHTML = '<div class="msg">Não consegui baixar o texto.<br><small>' + esc(String(err.message || err)) +
+      '</small><br><button class="iclose" onclick="openAt(true)">Tentar de novo</button></div>';
+    return;
+  }
+  S.book = Math.min(S.book, 65); S.chapter = Math.min(S.chapter, bible[S.book].length - 1);
+  pages = paginate(S.book, S.chapter);
+  let p = 0;
+  if (keepVerse) {
+    const target = pages.findIndex(pg => !pg.end && pg.html.includes('data-i="' + S.first + '"'));
+    if (target >= 0) p = target;
+  }
+  spread = Math.floor(p / stride());
+  showSpread();
+}
+
+/* ---------- Virar página (teclas, botões e arrastando com o mouse) ---------- */
+let turning = null;
+
+// Monta a folha que vai virar, sem ainda confirmar a mudança de página.
+function prepare(dir) {
+  if (busy || turning || !bible || overlayOpen()) return null;
+  closeMarker();
+  const total = pages.length / stride();
+  let nb = S.book, nc = S.chapter, ns = spread + dir, np = pages;
+  if (ns >= total) {
+    if (isLast()) { toast('Fim da Bíblia'); return null; }
+    nc++; if (nc >= bible[nb].length) { nb++; nc = 0; } ns = 0;
+  } else if (ns < 0) {
+    if (nb === 0 && nc === 0) { toast('Início da Bíblia'); return null; }
+    nc--; if (nc < 0) { nb--; nc = bible[nb].length - 1; }
+  }
+  const ctx = { dir, old: { book: S.book, chapter: S.chapter, pages, spread },
+    curL: $('pL').innerHTML, curR: $('pR').innerHTML };
+  if (nb !== S.book || nc !== S.chapter) {
+    S.book = nb; S.chapter = nc; np = paginate(nb, nc);
+    if (ns < 0) ns = np.length / stride() - 1;
+  }
+  pages = np; spread = ns;
+  ctx.newL = pageHTML(pages[ns * 2], 'left', ns * 2);
+  ctx.newR = pageHTML(pages[ns * 2 + 1], 'right', ns * 2 + 1);
+
+  const leaf = $('leaf'), front = leaf.querySelector('.front'), back = leaf.querySelector('.backf');
+  leaf.className = 'leaf show ' + (dir > 0 ? 'fwd' : 'back');
+  front.className = 'page face front ' + (dir > 0 ? 'right' : 'left');
+  back.className = 'page face backf ' + (dir > 0 ? 'left' : 'right');
+  if (dir > 0) { front.innerHTML = ctx.curR; back.innerHTML = ctx.newL; $('pR').innerHTML = ctx.newR; markHL($('pR')); }
+  else { front.innerHTML = ctx.curL; back.innerHTML = ctx.newR; $('pL').innerHTML = ctx.newL; markHL($('pL')); }
+  markHL(back);
+  setProgress(ctx, 0);
+  turning = ctx;
+  return ctx;
+}
+
+// p = 0 (folha no lugar) … 1 (folha virada para o outro lado)
+function setProgress(ctx, p) {
+  ctx.p = p;
+  const leaf = $('leaf');
+  leaf.style.transform = 'rotateY(' + (ctx.dir > 0 ? -180 : 180) * p + 'deg)';
+  leaf.style.setProperty('--pf', p);
+}
+
+// Termina a virada (complete = true) ou devolve a folha (false), animando a partir de onde ela está.
+function settle(ctx, complete, ms) {
+  busy = true;
+  const leaf = $('leaf');
+  const dist = complete ? 1 - ctx.p : ctx.p;
+  const t = Math.max(140, Math.round((ms || FLIP_MS) * dist));
+  leaf.style.setProperty('--t', t + 'ms');
+  void leaf.offsetWidth;
+  leaf.classList.add('anim');
+  setProgress(ctx, complete ? 1 : 0);
+  setTimeout(() => {
+    if (complete) {
+      if (ctx.dir > 0) { $('pL').innerHTML = ctx.newL; markHL($('pL')); }
+      else { $('pR').innerHTML = ctx.newR; markHL($('pR')); }
+      S.first = pages[spread * 2].first; save();
+    } else {
+      S.book = ctx.old.book; S.chapter = ctx.old.chapter; pages = ctx.old.pages; spread = ctx.old.spread;
+      $('pL').innerHTML = ctx.curL; $('pR').innerHTML = ctx.curR;
+    }
+    leaf.className = 'leaf'; leaf.style.transform = '';
+    busy = false; turning = null;
+  }, t + 30);
+}
+
+function flip(dir) {
+  if (compact) {
+    if (busy || !bible || overlayOpen()) return;
+    closeMarker();
+    let next = spread + dir;
+    if (next >= pages.length || next < 0) {
+      if (dir > 0 && isLast()) return toast('Fim da Bíblia');
+      if (dir < 0 && S.book === 0 && S.chapter === 0) return toast('Início da Bíblia');
+      S.chapter += dir;
+      if (S.chapter >= bible[S.book].length) { S.book++; S.chapter = 0; }
+      if (S.chapter < 0) { S.book--; S.chapter = bible[S.book].length - 1; }
+      pages = paginate(S.book, S.chapter);
+      next = dir > 0 ? 0 : pages.length - 1;
+    }
+    spread = next; showSpread(); return;
+  }
+  const ctx = prepare(dir); if (ctx) settle(ctx, true);
+}
+
+// Arrastar: segure a página e puxe para o outro lado.
+let drag = null, justDragged = false;
+$('spread').addEventListener('pointerdown', e => {
+  if (compact || e.button !== 0 || busy || turning) return;
+  const side = e.target.closest('#pL') ? -1 : e.target.closest('#pR') ? 1 : 0;
+  if (!side || e.target.closest('.phead button')) return;
+  drag = { side, x0: e.clientX, y0: e.clientY, id: e.pointerId, ctx: null, hist: [] };
+});
+window.addEventListener('pointermove', e => {
+  if (!drag || e.pointerId !== drag.id) return;
+  const dx = e.clientX - drag.x0;
+  if (!drag.ctx) {
+    // só começa a virar quando o mouse anda na direção da virada (senão é clique ou seleção de texto)
+    if (Math.abs(dx) < 10 || Math.sign(dx) !== -drag.side || Math.abs(dx) < Math.abs(e.clientY - drag.y0)) return;
+    drag.ctx = prepare(drag.side);
+    if (!drag.ctx) { drag = null; return; }
+    getSelection().removeAllRanges();
+    document.body.classList.add('dragging');
+    $('spread').setPointerCapture(e.pointerId);
+    const r = $('spread').getBoundingClientRect();
+    drag.spine = r.left + r.width / 2;
+    drag.reach = drag.x0 - drag.spine;
+    if (Math.abs(drag.reach) < 60) drag.reach = 60 * drag.side;
+  }
+  // a borda da folha acompanha o mouse: cos(ângulo) = distância até a lombada
+  const u = Math.max(-1, Math.min(1, (e.clientX - drag.spine) / drag.reach));
+  setProgress(drag.ctx, Math.acos(u) / Math.PI);
+  drag.hist.push({ x: e.clientX, t: e.timeStamp }); if (drag.hist.length > 5) drag.hist.shift();
+});
+function endDrag(e) {
+  if (!drag || e.pointerId !== drag.id) return;
+  const d = drag; drag = null;
+  document.body.classList.remove('dragging');
+  if (!d.ctx) return;
+  justDragged = true; setTimeout(() => justDragged = false, 50);
+  const h = d.hist, v = h.length > 1 ? (h[h.length - 1].x - h[0].x) / Math.max(1, h[h.length - 1].t - h[0].t) : 0;
+  const flick = v * -d.side > 0.5;   // puxada rápida na direção da virada
+  const undo = v * -d.side < -0.5;   // puxada rápida voltando
+  settle(d.ctx, flick || (!undo && d.ctx.p > 0.5), FLIP_MS * 0.8);
+}
+window.addEventListener('pointerup', endDrag);
+window.addEventListener('pointercancel', endDrag);
+
+/* ---------- Cliques nas páginas ---------- */
+$('spread').addEventListener('click', e => {
+  if (justDragged) return;
+  const act = e.target.closest('[data-act]');
+  if (act) {
+    const a = act.dataset.act;
+    if (a === 'next') flip(1); else if (a === 'prev') flip(-1);
+    else if (a === 'index') openIndex();
+    else if (a === 'ver') { S.version = VERSIONS[(VERSIONS.indexOf(S.version) + 1) % VERSIONS.length]; toast('Versão ' + S.version); openAt(true); }
+    return;
+  }
+  const v = e.target.closest('.v'); if (!v || getSelection().toString()) return;
+  e.stopPropagation();
+  openMarker(+v.dataset.i, e);
+});
+
+/* ---------- Marcador de cores ---------- */
+const COLOR_NAMES = { y: 'Amarelo', g: 'Verde', r: 'Vermelho' };
+let markerVerse = null;
+function openMarker(i, e) {
+  markerVerse = i;
+  const m = $('marker'), book = $('book').getBoundingClientRect();
+  const cur = (hl[S.book + ':' + S.chapter] || {})[i];
+  m.querySelectorAll('[data-c]').forEach(b => b.classList.toggle('cur', b.dataset.c === cur));
+  $('mRef').textContent = bk(S.book) + ' ' + (S.chapter + 1) + ':' + (i + 1);
+  m.classList.add('open');
+  const w = m.offsetWidth, h = m.offsetHeight;
+  let x = e.clientX - book.left - w / 2, y = e.clientY - book.top - h - 14;
+  if (y < 6) y = e.clientY - book.top + 18;
+  m.style.left = Math.max(6, Math.min(book.width - w - 6, x)) + 'px';
+  m.style.top = y + 'px';
+}
+const closeMarker = () => { $('marker').classList.remove('open'); markerVerse = null; };
+$('marker').addEventListener('click', async e => {
+  e.stopPropagation();
+  const b = e.target.closest('button'); if (!b || markerVerse == null) return;
+  const key = S.book + ':' + S.chapter, marks = hl[key] || {};
+  if (b.dataset.c) { marks[markerVerse] = b.dataset.c; toast('Marcado de ' + COLOR_NAMES[b.dataset.c].toLowerCase()); }
+  else if (b.dataset.act === 'study') { const i = markerVerse; closeMarker(); openStudy(S.book, S.chapter, i); return; }
+  else if (b.dataset.act === 'clear') { delete marks[markerVerse]; toast('Marcação removida'); }
+  else if (b.dataset.act === 'copy') {
+    await navigator.clipboard.writeText(bible[S.book][S.chapter][markerVerse] + '\n— ' + $('mRef').textContent + ' (' + S.version + ')');
+    toast('Versículo copiado');
+  }
+  if (Object.keys(marks).length) hl[key] = marks; else delete hl[key];
+  store.set('destaques', hl);
+  markHL($('pL')); markHL($('pR'));
+  closeMarker();
+});
+document.addEventListener('click', e => { if (!e.target.closest('#marker')) closeMarker(); });
+let wheelLock = 0;
+$('spread').addEventListener('wheel', e => {
+  const now = Date.now(); if (now < wheelLock || Math.abs(e.deltaY) < 4) return;
+  wheelLock = now + FLIP_MS + 150; flip(e.deltaY > 0 ? 1 : -1);
+}, { passive: true });
+
+/* ---------- Índice ---------- */
+let sel = 0;
+const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+function drawIndex() {
+  const q = norm($('filter').value.trim()); let out = '', ot = '', nt = '';
+  BOOKS.forEach((_, i) => { const name = bk(i);
+    if (q && !norm(name).includes(q)) return;
+    const row = '<div class="bk-row' + (i === sel ? ' sel' : '') + '" data-b="' + i + '">' + name + '<span>' + bible[i].length + '</span></div>';
+    if (i < 39) ot += row; else nt += row;
+  });
+  if (ot) out += '<div class="sec">Antigo Testamento</div>' + ot;
+  if (nt) out += '<div class="sec">Novo Testamento</div>' + nt;
+  $('ilist').innerHTML = out || '<div class="msg" style="margin-top:30%">Nenhum livro encontrado</div>';
+  $('ititle').textContent = bk(sel);
+  $('igrid').innerHTML = bible[sel].map((_, c) =>
+    '<button data-c="' + c + '"' + (sel === S.book && c === S.chapter ? ' class="cur"' : '') + '>' + (c + 1) + '</button>').join('');
+}
+function openIndex() {
+  if (!bible || busy) return;
+  sel = S.book; $('filter').value = ''; drawIndex(); $('index').classList.add('open');
+  setTimeout(() => { const r = $('ilist').querySelector('.sel'); r && r.scrollIntoView({ block: 'center' }); $('filter').focus(); }, 30);
+}
+const closeIndex = () => $('index').classList.remove('open');
+$('ilist').addEventListener('click', e => { const r = e.target.closest('.bk-row'); if (r) { sel = +r.dataset.b; drawIndex(); } });
+$('igrid').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  S.book = sel; S.chapter = +b.dataset.c; S.first = 0; closeIndex(); openAt(false);
+});
+$('filter').addEventListener('input', () => { const r = $('ilist').querySelector('.bk-row'); drawIndex();
+  const f = $('ilist').querySelector('.bk-row'); if (f && $('filter').value) { sel = +f.dataset.b; drawIndex(); } });
+$('iclose').onclick = closeIndex;
+$('bBooks').onclick = () => { if ($('index').classList.contains('open')) return closeIndex(); if (view !== 'bible') show(null); openIndex(); };
+
+/* ---------- Estudo: anotações e referências cruzadas ---------- */
+let xrefs = null, studyKey = null;
+const refLabel = (b, c, v, c2, v2) => bk(b) + ' ' + (c + 1) + ':' + (v + 1) +
+  (v2 != null ? (c2 !== c ? '–' + (c2 + 1) + ':' + (v2 + 1) : '–' + (v2 + 1)) : '');
+const verseText = (b, c, v) => bible?.[b]?.[c]?.[v] || '';
+
+function parseRef(r) {               // "b.c.v" ou "b.c.v-c2.v2"
+  const [a, z] = r.split('-'), [b, c, v] = a.split('.').map(Number);
+  if (!z) return { b, c, v };
+  const [c2, v2] = z.split('.').map(Number);
+  return { b, c, v, c2, v2 };
+}
+
+async function openStudy(b, c, v) {
+  closeMarker();
+  studyKey = b + '.' + c + '.' + v;
+  const label = refLabel(b, c, v);
+  $('stL').innerHTML =
+    '<div class="st-ref">' + label + '</div><div class="st-ver">' + S.version + '</div>' +
+    '<div class="st-text">' + esc(verseText(b, c, v)) + '</div>' +
+    '<div class="st-lbl">Minha anotação <small id="stSaved"></small></div>' +
+    '<textarea class="st-note" id="stNote" placeholder="Escreva aqui o que Deus falou com você neste versículo…"></textarea>' +
+    topicEditor('st', studyKey) +
+    '<div class="st-foot"><span>Salva automaticamente</span><button class="iclose" data-act="close">Fechar estudo</button></div>';
+  $('stNote').value = notes[studyKey] || '';
+  $('stR').innerHTML = '<div class="st-lbl" style="margin-top:2px">Referências cruzadas</div><div class="st-list" id="stList"><div class="st-empty">Carregando…</div></div>' +
+    '<div class="st-foot"><span>Fonte: OpenBible.info (CC-BY)</span><span>clique para ir ao texto</span></div>';
+  $('study').classList.add('open');
+  setTimeout(() => $('stNote').focus(), 50);
+
+  try { xrefs = xrefs || await window.api.loadXrefs(); }
+  catch { $('stList').innerHTML = '<div class="st-empty">Não consegui abrir as referências.</div>'; return; }
+  const list = xrefs[studyKey] || [];
+  $('stList').innerHTML = list.length ? list.map(r => {
+    const x = parseRef(r);
+    let t = verseText(x.b, x.c, x.v);
+    if (x.v2 != null) t += ' …';
+    return '<div class="xr" data-go="' + x.b + '.' + x.c + '.' + x.v + '"><b>' + refLabel(x.b, x.c, x.v, x.c2, x.v2) + '</b><p>' + esc(t) + '</p></div>';
+  }).join('') : '<div class="st-empty">Nenhuma referência cruzada<br>para este versículo.</div>';
+}
+
+const closeStudy = () => { $('study').classList.remove('open'); studyKey = null; };
+function goTo(b, c, v) {
+  closeStudy(); closeIndex();
+  S.book = b; S.chapter = Math.min(c, bible[b].length - 1); S.first = v;
+  openAt(true).then(() => document.querySelectorAll('#pL .v[data-i="' + v + '"], #pR .v[data-i="' + v + '"]')
+    .forEach(el => { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }));
+}
+$('study').addEventListener('click', e => {
+  const go = e.target.closest('[data-go]');
+  if (go) { const [b, c, v] = go.dataset.go.split('.').map(Number); return goTo(b, c, v); }
+  if (e.target.closest('[data-act="close"]')) closeStudy();
+});
+$('study').addEventListener('input', e => {
+  if (e.target.id === 'stTopics' && studyKey) { saveTopics(studyKey, e.target, 'st'); return; }
+  if (e.target.id !== 'stNote' || !studyKey) return;
+  const t = e.target.value;
+  if (t.trim()) notes[studyKey] = t; else delete notes[studyKey];
+  const ok = store.set('notas', notes); markHL($('pL')); markHL($('pR'));
+  $('stSaved').textContent = ok ? 'salvo ✓' : 'não salvo';
+});
+/* ---------- Capa (menu) e painéis ---------- */
+let view = 'home';                    // 'home' | 'bible' | 'ann' | 'nb' | 'vows'
+let bibleReady = Promise.resolve();
+const overlayOpen = () => view !== 'bible' || ['index', 'study', 'searchPanel', 'settingsPanel'].some(id => $(id).classList.contains('open'));
+const keyNum = k => k.split(/[.:]/).map(Number);
+const byOrder = (a, b) => { const x = keyNum(a), y = keyNum(b); return x[0] - y[0] || x[1] - y[1] || (x[2] || 0) - (y[2] || 0); };
+const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
+
+function show(id) {
+  closePanels();
+  closeMarker(); closeIndex(); closeStudy();
+  view = id || 'bible';
+  ['ann', 'nb', 'vows'].forEach(p => $(p).classList.toggle('open', p === view));
+  $('home').classList.toggle('hide', view !== 'home');
+  if (view === 'home') drawHome();
+  else if (view === 'ann') drawAnn();
+  else if (view === 'nb') drawNb();
+  else if (view === 'vows') drawVows();
+}
+function drawHome() {
+  $('hBible').textContent = bible ? 'continuar em ' + bk(S.book) + ' ' + (S.chapter + 1) : '';
+  const n = savedKeys().length;
+  $('hAnn').textContent = n ? plural(n, 'versículo', 'versículos') : '';
+  $('hNb').textContent = studies.length ? plural(studies.length, 'estudo', 'estudos') : '';
+  $('hVows').textContent = vows.text.trim() ? 'em andamento' : '';
+}
+$('home').addEventListener('click', e => {
+  const b = e.target.closest('[data-go]'); if (!b) return;
+  show(b.dataset.go === 'bible' ? null : b.dataset.go);
+});
+$('bHome').onclick = () => show(view === 'home' ? null : 'home');
+
+/* ---------- Anotações: versículos salvos + anotação de cada um ---------- */
+let annSel = null;
+const annFilters = { query: '', topic: '', color: '' };
+function topicEditor(prefix, key) {
+  return '<label class="topic-label" for="' + prefix + 'Topics">Temas <small>separe por vírgulas</small></label>' +
+    '<input class="topic-input" id="' + prefix + 'Topics" aria-describedby="' + prefix + 'TopicsStatus" value="' + esc((topics[key] || []).join(', ')) + '" placeholder="Ex.: Fé, Família" autocomplete="off">' +
+    '<div class="topic-status" id="' + prefix + 'TopicsStatus" role="status">Até 8 temas por versículo.</div>';
+}
+function saveTopics(key, input, prefix) {
+  const status = $(prefix + 'TopicsStatus');
+  try {
+    const list = NoteTopics.parse(input.value);
+    if (list.length) topics[key] = list; else delete topics[key];
+    const ok = store.set('temas', topics);
+    input.setCustomValidity('');
+    status.classList.remove('error'); status.textContent = ok ? 'Temas salvos ✓' : 'Temas não salvos';
+    if (view === 'ann') { updateTopicFilter(); drawAnnList(true); }
+  } catch (err) {
+    input.setCustomValidity(err.message); status.classList.add('error'); status.textContent = err.message;
+  }
+}
+function savedKeys() {
+  const set = new Set(Object.keys(notes).filter(k => notes[k].trim()));
+  for (const key of Object.keys(topics)) if (topics[key].length) set.add(key);
+  for (const ch in hl) for (const v in hl[ch]) set.add(ch.replace(':', '.') + '.' + v);
+  return [...set].sort(byOrder);
+}
+function annRow(k) {
+  const [b, c, v] = keyNum(k), col = (hl[b + ':' + c] || {})[v], n = (notes[k] || '').trim();
+  return '<button class="xr ann-row' + (k === annSel ? ' sel' : '') + '" data-k="' + k + '"><b><span class="dot ' + (col || 'n') + '"></span>' +
+    refLabel(b, c, v) + (n ? ' <i class="pen">✎</i>' : '') + '</b><p' + (n ? ' class="has-note"' : '') + '>' + esc(n || verseText(b, c, v)) + '</p>' +
+    ((topics[k] || []).length ? '<span class="topic-chips">' + topics[k].map(t => '<span class="topic-chip">' + esc(t) + '</span>').join('') + '</span>' : '') + '</button>';
+}
+function updateTopicFilter() {
+  const select = $('annTopicFilter'); if (!select) return;
+  select.innerHTML = '<option value="">Todos os temas</option><option value="none">Sem tema</option>' + NoteTopics.catalog(topics)
+    .map(([key, label]) => '<option value="topic:' + esc(key) + '">' + esc(label) + '</option>').join('');
+  // Keep a selected topic available even if the last matching annotation was edited.
+  if (annFilters.topic.startsWith('topic:') && ![...select.options].some(o => o.value === annFilters.topic)) {
+    const option = document.createElement('option'); option.value = annFilters.topic; option.textContent = annFilters.topic.slice(6); select.appendChild(option);
+  }
+  select.value = annFilters.topic;
+}
+function drawAnnList(preserveSelected = false) {
+  const all = savedKeys(), keys = all.filter(key => {
+    const [b, c, v] = keyNum(key);
+    return NoteTopics.matches({ reference: refLabel(b, c, v), text: verseText(b, c, v), note: notes[key] || '', topics: topics[key] || [], color: (hl[b + ':' + c] || {})[v] }, annFilters);
+  });
+  const previous = annSel;
+  if (!preserveSelected && !keys.includes(annSel)) annSel = keys[0] || null;
+  $('annCount').textContent = keys.length + ' de ' + plural(all.length, 'versículo', 'versículos');
+  $('annReset').hidden = !Object.values(annFilters).some(Boolean);
+  $('annList').innerHTML = keys.length ? keys.map(annRow).join('') : all.length
+    ? '<div class="st-empty">Nenhuma anotação corresponde aos filtros.<br>Use “Limpar filtros” para ver todas.</div>'
+    : '<div class="st-empty">Nenhum versículo salvo ainda.<br>Na Bíblia, marque um versículo ou escreva uma anotação.</div>';
+  if (!preserveSelected && (previous !== annSel || !$('annNote'))) drawAnnRight();
+}
+async function drawAnn() {
+  await bibleReady;
+  $('annL').innerHTML = '<div class="phead"><button data-act="home">‹ Menu</button><span>Anotações</span></div>' +
+    '<div class="ann-filters"><input id="annQuery" placeholder="Buscar nas anotações…" aria-label="Buscar texto, referência ou tema" autocomplete="off">' +
+    '<select id="annTopicFilter" aria-label="Filtrar por tema"></select>' +
+    '<select id="annColorFilter" aria-label="Filtrar por cor"><option value="">Todas as cores</option><option value="y">Amarelo</option><option value="g">Verde</option><option value="r">Vermelho</option><option value="none">Sem cor</option></select></div>' +
+    '<div class="ann-count"><span id="annCount" role="status"></span><button id="annReset" class="ann-reset" data-act="reset">Limpar filtros</button></div><div class="st-list" id="annList"></div>';
+  $('annQuery').value = annFilters.query; $('annColorFilter').value = annFilters.color;
+  updateTopicFilter(); drawAnnList();
+  drawAnnRight();
+}
+function drawAnnRight() {
+  const R = $('annR');
+  if (!annSel) { R.innerHTML = '<div class="phead"><span>Minha anotação</span><span>' + S.version + '</span></div><div class="st-empty">Escolha um versículo<br>para escrever sua anotação.</div>'; return; }
+  const [b, c, v] = keyNum(annSel), col = (hl[b + ':' + c] || {})[v];
+  R.innerHTML = '<div class="phead"><span>Minha anotação</span><span>' + S.version + '</span></div>' +
+    '<div class="st-ref">' + refLabel(b, c, v) + '</div>' +
+    '<div class="ann-colors">Marcação' + ['y', 'g', 'r'].map(x => '<button data-c="' + x + '"' + (x === col ? ' class="cur"' : '') + ' title="' + COLOR_NAMES[x] + '"></button>').join('') +
+    (col ? '<button data-c="" title="Remover marcação">✕</button>' : '') + '</div>' +
+    '<div class="st-text">' + esc(verseText(b, c, v)) + '</div>' +
+    '<div class="st-lbl">Anotação <small id="annSaved"></small></div>' +
+    '<textarea class="st-note" id="annNote" placeholder="Escreva aqui o que Deus falou com você neste versículo…"></textarea>' +
+    topicEditor('ann', annSel) +
+    '<div class="st-foot"><span>Salva automaticamente</span><button class="iclose" data-act="go">Ir ao versículo</button></div>';
+  $('annNote').value = notes[annSel] || '';
+}
+$('ann').addEventListener('click', e => {
+  const row = e.target.closest('[data-k]');
+  if (row) {
+    annSel = row.dataset.k;
+    $('annL').querySelectorAll('.xr').forEach(r => r.classList.toggle('sel', r === row));
+    drawAnnRight(); return;
+  }
+  const a = e.target.closest('[data-act]'), cb = e.target.closest('[data-c]');
+  if (a && a.dataset.act === 'home') show('home');
+  else if (a && a.dataset.act === 'reset') {
+    annFilters.query = annFilters.topic = annFilters.color = '';
+    $('annQuery').value = ''; $('annColorFilter').value = ''; updateTopicFilter(); drawAnnList();
+  }
+  else if (a && a.dataset.act === 'go') { const [b, c, v] = keyNum(annSel); show(null); goTo(b, c, v); }
+  else if (cb && annSel) {
+    const [b, c, v] = keyNum(annSel), key = b + ':' + c, marks = hl[key] || {};
+    if (cb.dataset.c) marks[v] = cb.dataset.c; else delete marks[v];
+    if (Object.keys(marks).length) hl[key] = marks; else delete hl[key];
+    store.set('destaques', hl); markHL($('pL')); markHL($('pR'));
+    const sc = $('annList').scrollTop; drawAnn().then(() => { $('annList').scrollTop = sc; });
+  }
+});
+$('ann').addEventListener('input', e => {
+  if (e.target.id === 'annQuery') { annFilters.query = e.target.value; drawAnnList(); return; }
+  if (e.target.id === 'annTopics' && annSel) { saveTopics(annSel, e.target, 'ann'); return; }
+  if (e.target.id !== 'annNote' || !annSel) return;
+  const k = annSel, t = e.target.value;
+  if (t.trim()) notes[k] = t; else delete notes[k];
+  drawAnnList(true);
+  const ok = store.set('notas', notes); markHL($('pL')); markHL($('pR'));
+  $('annSaved').textContent = ok ? 'salvo ✓' : 'não salvo';
+});
+$('ann').addEventListener('change', e => {
+  if (e.target.id === 'annTopicFilter') annFilters.topic = e.target.value;
+  else if (e.target.id === 'annColorFilter') annFilters.color = e.target.value;
+  else return;
+  drawAnnList();
+});
+$('bNotes').onclick = () => show(view === 'ann' ? null : 'ann');
+
+/* ---------- Estudos: caderno ---------- */
+let studies = store.get('estudos', []), nbSel = null, delArm = null;
+$('nbSpiral').innerHTML = '<i></i>'.repeat(16);
+const fmtDate = (ts, long) => new Date(ts).toLocaleDateString('pt-BR', long
+  ? { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' } : { day: '2-digit', month: '2-digit', year: '2-digit' });
+const curStudy = () => studies.find(s => s.id === nbSel);
+const nbRow = s => '<div class="nb-row' + (s.id === nbSel ? ' sel' : '') + '" data-id="' + s.id + '"><span>' +
+  esc(s.title.trim() || 'Sem título') + '</span><small>' + fmtDate(s.created) + '</small></div>';
+function drawNb() {
+  if (!curStudy()) nbSel = studies.length ? studies[0].id : null;
+  $('nbList').innerHTML = studies.length ? studies.map(nbRow).join('') : '<div class="nb-empty">Nenhum estudo ainda…</div>';
+  const s = curStudy();
+  $('nbR').classList.toggle('empty', !s);
+  disarmDel();
+  if (!s) return;
+  $('nbTitle').value = s.title; $('nbText').value = s.text;
+  $('nbDate').textContent = fmtDate(s.created, true); $('nbSaved').textContent = '';
+}
+function disarmDel() { clearTimeout(delArm); delArm = null; $('nbDel').textContent = 'Excluir'; $('nbDel').classList.remove('warn'); }
+$('nb').addEventListener('click', e => {
+  const row = e.target.closest('[data-id]');
+  if (row) { nbSel = +row.dataset.id; drawNb(); return; }
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  if (a.dataset.act === 'home') show('home');
+  else if (a.dataset.act === 'new') {
+    const s = { id: Date.now(), title: '', text: '', created: Date.now() };
+    studies.unshift(s); nbSel = s.id; store.set('estudos', studies); drawNb(); $('nbTitle').focus();
+  } else if (a.dataset.act === 'del') {
+    if (!delArm) { a.textContent = 'Clique de novo para excluir'; a.classList.add('warn'); delArm = setTimeout(disarmDel, 3000); return; }
+    studies = studies.filter(s => s.id !== nbSel); nbSel = null; store.set('estudos', studies); drawNb(); toast('Estudo excluído');
+  }
+});
+$('nb').addEventListener('input', e => {
+  const s = curStudy(); if (!s) return;
+  if (e.target.id === 'nbTitle') s.title = e.target.value;
+  else if (e.target.id === 'nbText') s.text = e.target.value;
+  else return;
+  s.updated = Date.now();
+  const row = $('nbList').querySelector('[data-id="' + s.id + '"]'); if (row) row.outerHTML = nbRow(s);
+  $('nbSaved').textContent = '';
+  $('nbSaved').textContent = store.set('estudos', studies) ? 'salvo ✓' : 'não salvo';
+});
+
+/* ---------- Votos de casamento ---------- */
+let vows = Object.assign({ to: '', date: '', text: '' }, store.get('votos', {}));
+const VW = { vwTo: 'to', vwDate: 'date', vwText: 'text' };
+function vwCount() { const n = (vows.text.match(/\S+/g) || []).length; $('vwCount').textContent = plural(n, 'palavra', 'palavras'); }
+function drawVows() { for (const id in VW) $(id).value = vows[VW[id]]; vwCount(); $('vwSaved').textContent = 'Salvo automaticamente'; }
+$('vows').addEventListener('input', e => {
+  const f = VW[e.target.id]; if (!f) return;
+  vows[f] = e.target.value; vwCount();
+  $('vwSaved').textContent = store.set('votos', vows) ? 'salvo ✓' : 'não salvo';
+});
+$('vows').addEventListener('click', async e => {
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  if (a.dataset.act === 'home') show('home');
+  else if (a.dataset.act === 'copy') {
+    if (!vows.text.trim()) return toast('Escreva seus votos primeiro');
+    await navigator.clipboard.writeText((vows.to.trim() ? vows.to.trim() + ',\n\n' : '') + vows.text.trim());
+    toast('Votos copiados');
+  }
+});
+
+/* ---------- Teclado e barra ---------- */
+document.addEventListener('keydown', e => {
+  const tag = e.target.tagName;
+  if (e.ctrlKey && e.key.toLowerCase() === 'f') { e.preventDefault(); openSearch(); return; }
+  if (e.ctrlKey && e.key.toLowerCase() === 'm') { e.preventDefault(); toggleCompact(); return; }
+  if (e.key === 'Escape') {
+    if ($('searchPanel').classList.contains('open') || $('settingsPanel').classList.contains('open')) closePanels();
+    else if ($('marker').classList.contains('open')) closeMarker();
+    else if ($('study').classList.contains('open')) closeStudy();
+    else if ($('index').classList.contains('open')) closeIndex();
+    else if (view !== 'bible' && view !== 'home') show('home');
+    return;
+  }
+  if (tag === 'TEXTAREA' || (tag === 'INPUT' && e.target.id !== 'filter')) return;
+  if (tag === 'INPUT') { if (e.key === 'Enter') { S.book = sel; S.chapter = 0; S.first = 0; closeIndex(); openAt(false); } return; }
+  if (overlayOpen()) return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); flip(1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') flip(-1);
+  else if (e.key === '+' || e.key === '=') bump(1);
+  else if (e.key === '-') bump(-1);
+});
+$('bPrev').onclick = () => flip(-1);
+$('bNext').onclick = () => flip(1);
+function bump(d) { if (busy) return; S.fs = Math.max(12, Math.min(22, S.fs + d)); applyLook(); toast('Letra ' + S.fs); openAt(true); }
+$('bBig').onclick = () => bump(1);
+$('bSmall').onclick = () => bump(-1);
+$('bTheme').onclick = () => { S.theme = THEMES[(THEMES.indexOf(S.theme) + 1) % THEMES.length]; applyLook(); save();
+  toast({ light: 'Papel claro', sepia: 'Papel envelhecido', dark: 'Leitura noturna' }[S.theme]); };
+$('bCopy').onclick = async () => {
+  const marks = hl[S.book + ':' + S.chapter];
+  if (!marks || !bible) return toast('Clique num versículo para marcar');
+  const v = bible[S.book][S.chapter], idx = Object.keys(marks).map(Number).sort((a, b) => a - b);
+  await navigator.clipboard.writeText(idx.map(i => (i + 1) + ' ' + v[i]).join('\n') + '\n— ' + bk(S.book) + ' ' + (S.chapter + 1) + ' (' + S.version + ')');
+  toast('Copiado!');
+};
+
+$('bMin').onclick = () => window.api.minimize();
+$('bClose').onclick = () => window.api.close();
+$('bTop').onclick = async () => { const on = await window.api.toggleTop(); $('bTop').classList.toggle('on', on); toast(on ? 'Sempre visível: ligado' : 'Sempre visível: desligado'); };
+let win = { opacity: 1, zoom: 1 };
+$('bOpacity').onclick = async () => {
+  const i = OPACITIES.findIndex(o => Math.abs(o - win.opacity) < .01);
+  win.opacity = await window.api.opacity(OPACITIES[(i + 1) % OPACITIES.length]);
+  $('bOpacity').textContent = Math.round(win.opacity * 100) + '%';
+  $('bOpacity').classList.toggle('on', win.opacity < 1); toast('Opacidade ' + Math.round(win.opacity * 100) + '%');
+};
+$('bZoom').onclick = async () => {
+  const i = ZOOMS.findIndex(z => Math.abs(z - win.zoom) < .01);
+  win.zoom = await window.api.zoom(ZOOMS[(i + 1) % ZOOMS.length]); toast('Tamanho ' + Math.round(win.zoom * 100) + '%');
+  $('bZoom').textContent = Math.round(win.zoom * 100) + '%';
+};
+
+/* ---------- Busca, backup e uma página ---------- */
+let searchIndex = null, searchBible = null, searchLimit = 50, searchTimer;
+function closePanels() {
+  for (const id of ['searchPanel', 'settingsPanel']) $(id).classList.remove('open');
+  $('bSearch').setAttribute('aria-expanded', 'false');
+  $('bSettings').setAttribute('aria-expanded', 'false');
+}
+function openPanel(id) {
+  if (busy) return false;
+  closeMarker(); closeIndex(); closeStudy(); closePanels();
+  $(id).classList.add('open');
+  return true;
+}
+function renderSearch() {
+  if (!bible) {
+    $('searchStatus').textContent = 'O texto bíblico ainda não está disponível. Abra a Bíblia para tentar carregar novamente.';
+    return;
+  }
+  const query = $('searchInput').value.trim();
+  if (!query) { $('searchResults').innerHTML = ''; $('searchStatus').textContent = 'Exemplos: João 3:16 · Sl 23 · amor ao próximo'; return; }
+  if (searchBible !== bible) { searchIndex = BibleSearch.createIndex(bible); searchBible = bible; }
+  const result = BibleSearch.search(searchIndex, bible, query, BOOKS, BOOKS_EN, searchLimit);
+  $('searchStatus').textContent = result.invalidReference ? 'Este capítulo ou versículo não existe nesta versão.' :
+    result.total ? plural(result.total, 'resultado', 'resultados') + ' em ' + S.version + (result.total > searchLimit ? ' · mostrando ' + searchLimit : '') : 'Nenhum resultado. Tente outra palavra ou referência.';
+  $('searchResults').innerHTML = result.results.map(r => '<button class="search-result" data-ref="' + [r.b, r.c, r.v].join('.') + '"><b>' +
+    refLabel(r.b, r.c, r.v) + '</b><p>' + esc(r.text) + '</p></button>').join('') +
+    (result.total > searchLimit ? '<button class="iclose" data-more="true">Mostrar mais resultados</button>' : '');
+}
+function openSearch() {
+  if (!openPanel('searchPanel')) return;
+  $('bSearch').setAttribute('aria-expanded', 'true');
+  renderSearch(); $('searchInput').focus();
+}
+$('bSearch').onclick = openSearch;
+$('searchClose').onclick = () => { closePanels(); $('bSearch').focus(); };
+$('searchInput').addEventListener('input', () => { clearTimeout(searchTimer); searchLimit = 50; searchTimer = setTimeout(renderSearch, 140); });
+$('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { clearTimeout(searchTimer); renderSearch(); const first = $('searchResults').querySelector('[data-ref]'); if (first) first.click(); }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); $('searchResults').querySelector('button')?.focus(); }
+});
+$('searchResults').addEventListener('click', e => {
+  const button = e.target.closest('button'); if (!button) return;
+  if (button.dataset.more) { searchLimit += 50; renderSearch(); return; }
+  const [b, c, v] = button.dataset.ref.split('.').map(Number);
+  show(null); goTo(b, c, v);
+});
+$('bSettings').onclick = () => { if (openPanel('settingsPanel')) { $('bSettings').setAttribute('aria-expanded', 'true'); $('settingsClose').focus(); } };
+$('settingsClose').onclick = () => { closePanels(); $('bSettings').focus(); };
+async function toggleCompact() {
+  if (busy || !bible) return;
+  busy = true;
+  try {
+    const value = await window.api.compact(!compact);
+    compact = value; win.compact = value;
+    document.body.classList.toggle('compact', value);
+    document.documentElement.style.width = value ? '440px' : '800px';
+    document.documentElement.style.height = value ? '640px' : '540px';
+    $('bCompact').classList.toggle('on', value);
+    $('bCompact').setAttribute('aria-pressed', String(value));
+    await openAt(true);
+    toast(value ? 'Uma página, mesmo tamanho de letra' : 'Livro aberto');
+  } catch (err) { toast('Não foi possível mudar o tamanho: ' + err.message); }
+  finally { busy = false; }
+}
+$('bCompact').onclick = toggleCompact;
+function persistAll() {
+  return [['leitura', S], ['destaques', hl], ['notas', notes], ['temas', topics], ['estudos', studies], ['votos', vows]].map(([key, value]) => store.set(key, value)).every(Boolean);
+}
+$('bExport').onclick = async () => {
+  persistAll();
+  const result = await window.api.exportBackup({ leitura: S, destaques: hl, notas: notes, temas: topics, estudos: studies, votos: vows });
+  if (!result.canceled) $('backupStatus').textContent = result.ok ? 'Backup exportado com sucesso.' : 'Não foi possível exportar: ' + result.error;
+};
+$('bImport').onclick = async () => {
+  if (!disk.error && !persistAll()) return;
+  const result = await window.api.importBackup();
+  if (result.ok) {
+    // Also replace the compatibility mirror so removed fields cannot reappear.
+    for (const key of ['leitura', 'destaques', 'notas', 'temas', 'estudos', 'votos']) {
+      try { localStorage.removeItem(key); if (result.data[key] !== undefined) localStorage.setItem(key, JSON.stringify(result.data[key])); } catch {}
+    }
+    location.reload();
+  } else if (!result.canceled) $('backupStatus').textContent = 'Não foi possível restaurar: ' + result.error;
+};
+document.querySelectorAll('button[title]').forEach(button => button.setAttribute('aria-label', button.title));
+// Transparent panels must also be removed from keyboard navigation when closed.
+function updateInertPanels() {
+  const panelOpen = ['searchPanel', 'settingsPanel'].some(id => $(id).classList.contains('open'));
+  for (const id of ['index', 'study', 'ann', 'nb', 'vows']) $(id).inert = panelOpen || !$(id).classList.contains('open');
+  $('home').inert = view !== 'home' || panelOpen;
+  $('spread').inert = overlayOpen();
+}
+new MutationObserver(updateInertPanels).observe($('book'), { attributes: true, subtree: true, attributeFilter: ['class'] });
+
+(async () => {
+  win = await window.api.state();
+  compact = win.compact;
+  document.body.classList.toggle('compact', compact);
+  document.documentElement.style.width = compact ? '440px' : '800px';
+  document.documentElement.style.height = compact ? '640px' : '540px';
+  $('bCompact').classList.toggle('on', compact);
+  $('bCompact').setAttribute('aria-pressed', String(compact));
+  $('bOpacity').textContent = Math.round(win.opacity * 100) + '%';
+  $('bZoom').textContent = Math.round(win.zoom * 100) + '%';
+  $('bTop').classList.toggle('on', win.onTop);
+  $('bOpacity').classList.toggle('on', win.opacity < 1);
+  drawHome();
+  persistAll();
+  if (disk.error) saveWarning(disk.error);
+  else if (disk.recovered) toast('Seus dados foram recuperados da cópia anterior.');
+  updateInertPanels();
+  bibleReady = openAt(true).then(() => { if (view === 'home') drawHome(); });
+})();
+</script>
+</body>
+</html>

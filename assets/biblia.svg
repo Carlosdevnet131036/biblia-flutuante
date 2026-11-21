@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="leather" x2="1" y2="1"><stop stop-color="#855132"/><stop offset="1" stop-color="#3b2015"/></linearGradient>
+    <linearGradient id="gold" x2="1" y2="1"><stop stop-color="#fff0ae"/><stop offset=".5" stop-color="#dfb75e"/><stop offset="1" stop-color="#a97727"/></linearGradient>
+  </defs>
+  <rect x="35" y="19" width="188" height="227" rx="17" fill="#27160f"/>
+  <rect x="49" y="200" width="171" height="39" rx="9" fill="#f4e8ca"/>
+  <path d="M59 221H211M59 229H211" stroke="#bfa77b" stroke-width="2"/>
+  <rect x="33" y="10" width="190" height="207" rx="15" fill="url(#leather)" stroke="#bd934f" stroke-width="3"/>
+  <path d="M59 12V214" stroke="#26170f" stroke-width="4"/>
+  <path d="M64 13V212" stroke="#b98a46" stroke-opacity=".6" stroke-width="2"/>
+  <rect x="76" y="30" width="128" height="165" rx="5" fill="none" stroke="url(#gold)" stroke-width="3"/>
+  <path d="M131 64H149V94H177V111H149V155H131V111H103V94H131Z" fill="url(#gold)"/>
+  <path d="M139 170L145 176L139 182L133 176Z" fill="#dfb75e"/>
+  <path d="M180 215H196V253L188 247L180 253Z" fill="#a92e26"/>
+</svg>

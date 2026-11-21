@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "biblia-web", "runtimeExecutable": "npx", "runtimeArgs": ["--yes", "http-server@14.1.1", "-p", "8787", "-c-1", "."], "port": 8787 }
+  ]
+}

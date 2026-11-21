@@ -1,0 +1,5 @@
+Referências cruzadas: OpenBible.info (https://www.openbible.info/labs/cross-references/)
+Licença Creative Commons Attribution (CC-BY).
+
+Textos bíblicos (ACF, NVI, AA, KJV): projeto thiagobodruk/biblia e thiagobodruk/bible no GitHub.
+A King James Version (1611) é de domínio público.
