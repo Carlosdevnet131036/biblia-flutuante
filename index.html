@@ -17,6 +17,8 @@
 <style>
   html.web, html.web body { background: #211a14; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
   html.web { overscroll-behavior: none; }
+  html.web:has(body.compact) { height: var(--app-h, 640px) !important; }
+  html.web body.compact, html.web body.compact .book { height: var(--app-h, 640px); }
 </style>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }

@@ -44,15 +44,31 @@
     const inset = p => parseFloat(cs[p]) || 0;
     const top = inset('paddingTop'), bottom = inset('paddingBottom');
     const left = inset('paddingLeft'), right = inset('paddingRight');
-    const w = state.compact ? 440 : 800, h = state.compact ? 640 : 540;
     const vw = window.innerWidth - left - right, vh = window.innerHeight - top - bottom;
-    const s = Math.min(vw / w, vh / h);
+    let w = 800, h = 540, s;
+    if (state.compact) {
+      // Uma página: ocupa toda a largura e estica a altura até o fim da tela.
+      w = 440;
+      s = Math.min(vw / w, vh / 560);
+      h = Math.max(560, Math.floor(vh / s));
+    } else s = Math.min(vw / w, vh / h);
+    const changed = html.style.getPropertyValue('--app-h') !== h + 'px';
+    html.style.setProperty('--app-h', h + 'px');
     html.style.zoom = s;
     html.style.marginLeft = (left + (vw - w * s) / 2) / s + 'px';
     html.style.marginTop = (top + Math.max(0, (vh - h * s) / 2)) / s + 'px';
+    return changed;
   }
-  window.addEventListener('resize', fit);
-  window.addEventListener('orientationchange', () => setTimeout(fit, 250));
+  // Ao girar a tela, reorganiza o texto nas páginas com a nova altura.
+  let refit;
+  function onResize() {
+    clearTimeout(refit);
+    refit = setTimeout(() => {
+      if (fit() && typeof bible !== 'undefined' && bible && typeof openAt === 'function') openAt(true);
+    }, 200);
+  }
+  window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', onResize);
 
   // ---------- Gestos: deslizar para virar a página ----------
   let touch = null;
