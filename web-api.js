@@ -139,11 +139,20 @@
         const backup = JSON.parse(await file.text());
         if (!backup || backup.format !== 'biblia-flutuante' || backup.version !== 1)
           throw new Error('Este arquivo não é um backup compatível da Bíblia Flutuante.');
-        if (!confirm('Substituir seus dados pelo backup selecionado?\n\nUma cópia dos dados atuais será preservada.')) return { canceled: true };
+        if (!object(backup.data)) throw new Error('Dados de backup inválidos.');
+        // Um backup parcial (ex.: só os votos) substitui apenas o que contém; o resto do celular fica intacto.
+        const keys = Object.keys(backup.data);
+        const partial = keys.length < KEYS.length;
+        const names = { leitura: 'posição de leitura', destaques: 'marcações', notas: 'anotações', temas: 'temas', estudos: 'estudos', votos: 'votos' };
+        const msg = partial
+          ? `Restaurar do backup: ${keys.map(k => names[k] || k).join(', ')}?\n\nO restante dos seus dados não será alterado.`
+          : 'Substituir seus dados pelo backup selecionado?\n\nUma cópia dos dados atuais será preservada.';
+        if (!confirm(msg)) return { canceled: true };
         if (Object.keys(data).length) ls.set(PREV, data);
         preserved = true;
-        replace(backup.data);
-        return { ok: true, data: backup.data };
+        const merged = partial ? { ...data, ...backup.data } : backup.data;
+        replace(merged);
+        return { ok: true, data: merged };
       } catch (err) { return { error: err.message }; }
     },
     async loadBible(version) {
